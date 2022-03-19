@@ -14,7 +14,11 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 
+import lapfarsc.qe.dashboard.dto.CmdTopDTO;
+import lapfarsc.qe.dashboard.dto.ComandoDTO;
 import lapfarsc.qe.dashboard.dto.MaquinaDTO;
+import lapfarsc.qe.dashboard.util.Dominios.ArgTypeEnum;
+import lapfarsc.qe.dashboard.util.Dominios.ComandoEnum;
 
 import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.ChannelExec;
@@ -32,29 +36,17 @@ public class HeadBusiness {
 		this.conn = conn;
 	}
 	
-	public int accessAll() throws Exception {
-		this.selectListMaquinasDTO();	
+	public void acessarTodasMaquinas() throws Exception {
+		this.selectListMaquinaDTO();
 		for (MaquinaDTO maqDTO : listMaquinaDTO) {			
-			sshInicialMaquinaDTO(maqDTO);			
-			//break;			
+			sshInicialMaquinaDTO(maqDTO);
 		}		
 		updateOfflineTodasMaquinasDTO();		
-		updateOnlineMaquinasDTO();
-		
-		int count = 0;
-		//acionamento do SLAVE1 para as maquinas ON
-		this.selectListMaquinasDTO();	
-		for (MaquinaDTO maqDTO : listMaquinaDTO) {
-			if(maqDTO.getOnline() && !maqDTO.getIgnorar()){
-				
-				count++;
-			}
-		}
-		return count;
+		updateOnlineMaquinasDTO();		
 	}
 	
-	private void sshInicialMaquinaDTO(MaquinaDTO maqDTO) throws Exception{		
-			
+		
+	private void sshInicialMaquinaDTO(MaquinaDTO maqDTO) throws Exception{
 		Session session = null;
 		Channel channel = null;
 		try{				
@@ -64,59 +56,61 @@ public class HeadBusiness {
 			System.out.println(maqDTO.getSsh()+"> SSH OK");
 			maqDTO.setOnline( Boolean.TRUE );
 			
+			String cmd = null;
+			//acionamento do SLAVE1 para as maquinas ON
+			if(maqDTO.getOnline() && 
+					!maqDTO.getIgnorar()){
+				ComandoDTO comandoDTO = selectComandoDTO( ComandoEnum.JAVA_JAR.getIndex() );
+				if(comandoDTO==null){
+					return;
+				}
+				cmd = comandoDTO.getTemplate();
+				//java -jar @JARPATH @ARG &
+				cmd = cmd.replace("@JARPATH", maqDTO.getJarPath());
+				cmd = cmd.replace("@ARG", ArgTypeEnum.SLAVE1.getArg());
+			}
+			
 			String[] commands = new String[]{
 					"top -bn1 |grep Cpu",
-					"top -bn1 |grep Mem"
+					"top -bn1 |grep Mem",
+					cmd
 			};
-			StringBuilder sb = new StringBuilder();
 			
-			for (String cmd : commands) {
-				channel = session.openChannel("exec");
-				((ChannelExec) channel).setCommand(cmd);
-				channel.setInputStream(null);
-				((ChannelExec) channel).setErrStream(System.err);
-				InputStream in = channel.getInputStream();
-				channel.connect();		
-				byte[] tmp=new byte[1024];
-				while(true){
-					while(in.available()>0){
-						int i=in.read(tmp, 0, 1024);
-						if(i<0)break;
-						sb.append(new String(tmp, 0, i));
+			StringBuilder sb = new StringBuilder();			
+			for (String linhaComando : commands) {
+				if(linhaComando!=null){
+					channel = session.openChannel("exec");
+					((ChannelExec) channel).setCommand(linhaComando);
+					channel.setInputStream(null);
+					((ChannelExec) channel).setErrStream(System.err);
+					InputStream in = channel.getInputStream();
+					channel.connect();		
+					byte[] tmp=new byte[1024];
+					while(true){
+						while(in.available()>0){
+							int i=in.read(tmp, 0, 1024);
+							if(i<0)break;
+							sb.append(new String(tmp, 0, i));
+						}
+						if(channel.isClosed()){
+							if(in.available()>0) continue;						
+							break;
+						}
+						try{Thread.sleep(1000);}catch(Exception ee){}
 					}
-					if(channel.isClosed()){
-						if(in.available()>0) continue;						
-						break;
-					}
-					try{Thread.sleep(1000);}catch(Exception ee){}
+					in.close();
 				}
-				in.close();
-			}
-			//TODO COLOCAR INFOS NO DTO
-			String kw = "%Cpu(s):";
-			int kwid = sb.indexOf(kw);
-			if(kwid!=-1){
-				String cpuused = sb.substring(kwid+kw.length(), sb.indexOf("us",kwid+kw.length()) );
-				maqDTO.setCpuUsed(BigDecimal.valueOf( Double.parseDouble( cpuused.replace(",", ".") ) ) );
-			}
-			kw = "Mem";
-			kwid = sb.indexOf(kw);
-			if(kwid!=-1){
-				String info = sb.substring(kwid+kw.length(), sb.indexOf("used",kwid+kw.length()) ).trim();
-				String memtot = info.substring(info.indexOf(":")+1, info.indexOf("total") );
-				String memused = info.substring( info.lastIndexOf(",")+4>info.length()? info.substring(0,info.length()-4).lastIndexOf(",")+1 : info.lastIndexOf(",")+1, info.length() );
-				maqDTO.setMemUsed(BigDecimal.valueOf( 100*(Double.parseDouble( memused.replace(",", ".") ) / Double.parseDouble( memtot.replace(",", ".")) ) ) );
-			}
-			//System.out.println(sb.toString());
+			}			
+			CmdTopDTO cmdDTO = getCommandTopInfos(sb.toString());
+			maqDTO.setCpuUsed( cmdDTO.getCpuUsed() );
+			maqDTO.setMemUsed( cmdDTO.getMemUsed() );
 		
 		} catch (Throwable e) {
 			if(e.getCause() instanceof NoRouteToHostException){
 				maqDTO.setOnline( Boolean.FALSE );
 				System.out.println(maqDTO.getSsh()+"> OFFLINE: "+e.getCause());
-				//e.printStackTrace();
 			}else{
 				System.out.println(maqDTO.getSsh()+"> ERRO: "+e.getCause());
-				//e.printStackTrace();
 			}
 		}finally{
 			if(channel!=null && !channel.isClosed()) channel.disconnect();
@@ -125,6 +119,27 @@ public class HeadBusiness {
 		//System.out.println(maqDTO.getSsh()+"> SSH DISCONNECTED: "+channel.getExitStatus());
 	}
 	
+	public static CmdTopDTO getCommandTopInfos(String cabecalho){
+		//System.out.println(cabecalho);
+		CmdTopDTO dto = new CmdTopDTO();
+		
+		BigDecimal used[] = new BigDecimal[2];		
+		String kw = "%Cpu(s):";
+		int kwid = cabecalho.indexOf(kw);
+		if(kwid!=-1){
+			String cpuused = cabecalho.substring(kwid+kw.length(), cabecalho.indexOf("us",kwid+kw.length()) );
+			dto.setCpuUsed(BigDecimal.valueOf( Double.parseDouble( cpuused.replace(",", ".") ) ) );
+		}
+		kw = "Mem";
+		kwid = cabecalho.indexOf(kw);
+		if(kwid!=-1){
+			String info = cabecalho.substring(kwid+kw.length(), cabecalho.indexOf("used",kwid+kw.length()) ).trim();
+			String memtot = info.substring(info.indexOf(":")+1, info.indexOf("total") );
+			String memused = info.substring( info.lastIndexOf(",")+4>info.length()? info.substring(0,info.length()-4).lastIndexOf(",")+1 : info.lastIndexOf(",")+1, info.length() );
+			dto.setMemUsed(BigDecimal.valueOf( 100*(Double.parseDouble( memused.replace(",", ".") ) / Double.parseDouble( memtot.replace(",", ".")) ) ) );
+		}
+		return dto;
+	}
 
 	private Session getSessionSSH(final String ssh, final String senha) throws Throwable {
 		JSch jsch = new JSch();
@@ -171,9 +186,7 @@ public class HeadBusiness {
 	private void updateOnlineMaquinasDTO() throws Exception {		
 		PreparedStatement ps = null;
 		try{
-			ps = conn.prepareStatement("UPDATE maquina SET " +
-					"	online=?, cpuused=?, memused=?, ultimoacesso=NOW() " +
-					" WHERE codigo = ? ");
+			ps = conn.prepareStatement("UPDATE maquina SET online=?, cpuused=?, memused=?, ultimoacesso=NOW() WHERE codigo = ? ");
 			for (MaquinaDTO m : listMaquinaDTO) {
 				if(m.getOnline()){
 					int p = 1;
@@ -189,7 +202,7 @@ public class HeadBusiness {
 		}
 	}
 	
-	private void selectListMaquinasDTO() throws Exception {
+	private void selectListMaquinaDTO() throws Exception {
 		//listagem de maquinas		
 		PreparedStatement ps = null;
 		ResultSet rs = null;
@@ -199,7 +212,7 @@ public class HeadBusiness {
 					"	COALESCE(cpuused,0) AS cpuused, COALESCE(memused,0) AS memused," +
 					"   TO_CHAR(ultimoacesso,'dd/mm/yyyy HH:mm:ss') AS ultimoacesso," +
 					" iniciarjob,online,ignorar " +
-					" FROM maquina ORDER BY ultimoacesso");
+					" FROM maquina ORDER BY codigo");
 			rs = ps.executeQuery();
 			
 			this.listMaquinaDTO = new ArrayList<MaquinaDTO>();	
@@ -220,7 +233,7 @@ public class HeadBusiness {
 				
 				maq.setIniciarJob(rs.getBoolean("iniciarjob"));
 				maq.setOnline(rs.getBoolean("online"));
-				maq.setOnline(rs.getBoolean("ignorar"));
+				maq.setIgnorar(rs.getBoolean("ignorar"));
 				this.listMaquinaDTO.add(maq);
 			}			
 		}finally{
@@ -229,6 +242,25 @@ public class HeadBusiness {
 		}
 	}
 	
-	
-	
+	private ComandoDTO selectComandoDTO(Integer id) throws Exception {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try{
+			ps = conn.prepareStatement("SELECT codigo,cmdtemplate,cmdprefixo FROM comando WHERE codigo = ? ");
+			ps.setInt(1, id);
+			rs = ps.executeQuery();			
+			if(rs.next()){
+				ComandoDTO dto = new ComandoDTO();
+				dto.setCodigo(rs.getInt("codigo"));
+				dto.setTemplate(rs.getString("cmdtemplate"));
+				dto.setPrefixo(rs.getString("cmdprefixo"));
+				return dto;
+			}			
+		}finally{
+			if(rs!=null) rs.close();
+			if(ps!=null) ps.close();
+		}
+		return null;
+	}
+		
 }
