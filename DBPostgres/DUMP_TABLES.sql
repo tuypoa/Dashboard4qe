@@ -1,29 +1,41 @@
 ﻿/*
+DROP TABLE qeleitura;
+DROP TABLE jarleitura;
 DROP TABLE psaux;
-DROP TABLE infoscf;
-DROP TABLE leitura;
-DROP TABLE resumo;
+DROP TABLE qeinfoiteration;
+DROP TABLE qeinfoscf;
+DROP TABLE qeresumo;
 DROP TABLE comando;
-DROP TABLE maquina_arquivoin;
+DROP TABLE maquina_qearquivoin;
 DROP TABLE maquina;
-DROP TABLE arquivoin;
+DROP TABLE qearquivoin;
 DROP TABLE molecula;
-
 */
 
 CREATE TABLE maquina (
   codigo serial NOT NULL PRIMARY KEY ,
   datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   nome varchar(50) NOT NULL,
-  rootpath varchar(100) NOT NULL,
   ssh varchar(100),
   senha varchar(20),
+  rootpath varchar(150) NOT NULL,
+  jarpath varchar(150) NOT NULL,  
   mincpu integer NOT NULL,
   maxcpu integer NOT NULL,
   cpuused numeric(5,2),
   memused numeric(5,2),
-  ultimoacesso timestamp,
-  ultimalida timestamp
+  ultimoacesso timestamp,  
+  iniciarjob boolean NOT NULL DEFAULT TRUE,
+  online boolean NOT NULL DEFAULT FALSE,
+  ignorar boolean NOT NULL DEFAULT FALSE
+);
+
+CREATE TABLE jarleitura (
+  codigo serial NOT NULL PRIMARY KEY,
+  maquina_codigo int not null REFERENCES maquina (codigo),
+  datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  cpuused numeric(5,2),
+  memused numeric(5,2)
 );
  
 CREATE TABLE molecula (
@@ -32,7 +44,7 @@ CREATE TABLE molecula (
   nome varCHAR(50) NOT NULL
 );
 
-CREATE TABLE arquivoin (
+CREATE TABLE qearquivoin (
   codigo serial NOT NULL PRIMARY KEY,
   datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   hash character(32) NOT NULL UNIQUE,
@@ -41,27 +53,29 @@ CREATE TABLE arquivoin (
   molecula_codigo integer NOT NULL REFERENCES molecula (codigo)
 );
 
-CREATE TABLE resumo (
+CREATE TABLE qeresumo (
   codigo serial NOT NULL PRIMARY KEY,
-  arquivoin_codigo int not null REFERENCES arquivoin (codigo),
+  qearquivoin_codigo int not null REFERENCES qearquivoin (codigo),
   datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  hash character(32) NOT NULL,
+  hashoutput character(32) NOT NULL,
   nome varchar(150) NOT NULL,
-  tamanho real NOT NULL,
+  tamanhokb real NOT NULL,
+  qtdecpu smallint NOT NULL,
   ultimalida timestamp,
   jobconcluido boolean NOT NULL DEFAULT FALSE,
   jobexecutando boolean NOT NULL DEFAULT FALSE
 );
 
-CREATE TABLE leitura (
+CREATE TABLE qeleitura (
   codigo serial NOT NULL PRIMARY KEY,
-  resumo_codigo int not null REFERENCES resumo (codigo),
+  jarleitura_codigo int not null REFERENCES jarleitura (codigo),
+  qeresumo_codigo int not null REFERENCES qeresumo (codigo),
   datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  tamanho real NOT NULL  
+  tamanhokb real NOT NULL
 );
 
-CREATE TABLE infoscf (
-  resumo_codigo int NOT NULL REFERENCES resumo (codigo),
+CREATE TABLE qeinfoscf (
+  qeresumo_codigo int NOT NULL REFERENCES qeresumo (codigo),
   scfcycles smallint NOT NULL,
   bfgssteps smallint,
   converged boolean,
@@ -72,27 +86,27 @@ CREATE TABLE infoscf (
   cputime real,
   cellparams text,
   atomicpositions text,
-  PRIMARY KEY (resumo_codigo, scfcycles)
+  PRIMARY KEY (qeresumo_codigo, scfcycles)
 );
 
-CREATE TABLE infoiteration (
-  resumo_codigo int NOT NULL REFERENCES resumo (codigo),
+CREATE TABLE qeinfoiteration (
+  qeresumo_codigo int NOT NULL REFERENCES qeresumo (codigo),
   scfcycles smallint NOT NULL,
   iteration smallint NOT NULL,  
   cputime real not null,
-  PRIMARY KEY (resumo_codigo, scfcycles, iteration)
+  PRIMARY KEY (qeresumo_codigo, scfcycles, iteration)
 );
 
-CREATE TABLE maquina_arquivoin (
+CREATE TABLE maquina_qearquivoin (
   maquina_codigo integer not null REFERENCES maquina (codigo),
-  arquivoin_codigo integer not null REFERENCES arquivoin (codigo),
+  qearquivoin_codigo integer not null REFERENCES qearquivoin (codigo),
   datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   path character varying(250) NOT NULL,	  
   nomein character varying(100) NOT NULL,
   nomeout character varying(100),	  
   ordem int NOT NULL,
   ignorar boolean NOT NULL DEFAULT FALSE,
-  PRIMARY KEY (maquina_codigo, arquivoin_codigo)
+  PRIMARY KEY (maquina_codigo, qearquivoin_codigo)
 );
 
 CREATE TABLE comando (
@@ -104,14 +118,15 @@ CREATE TABLE comando (
 
 CREATE TABLE psaux (
   maquina_codigo integer NOT NULL REFERENCES maquina (codigo),
-  arquivoin_codigo integer NOT NULL REFERENCES arquivoin (codigo),
-  comando_codigo integer NOT NULL REFERENCES comando (codigo),
-  resumo_codigo integer REFERENCES resumo (codigo),
-  pid int NOT NULL,
+  comando_codigo integer NOT NULL REFERENCES comando (codigo),  
+  pid int NOT NULL,  
   datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   uid int NOT NULL,
+  qearquivoin_codigo integer REFERENCES qearquivoin (codigo),
+  qeresumo_codigo integer REFERENCES qeresumo (codigo),
   cpu numeric(5,2) NOT NULL,
   mem numeric(5,2) NOT NULL,
-  PRIMARY KEY (maquina_codigo, arquivoin_codigo, comando_codigo, resumo_codigo, pid)
+  PRIMARY KEY (maquina_codigo, comando_codigo, pid)
 );
+
 
