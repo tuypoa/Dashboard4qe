@@ -67,7 +67,7 @@ public class HeadBusiness {
 				cmd = comandoDTO.getTemplate();
 				//java -jar @JARPATH @ARG &
 				cmd = cmd.replace("@JARPATH", maqDTO.getJarPath());
-				cmd = cmd.replace("@ARG", ArgTypeEnum.SLAVE1.getArg());
+				cmd = cmd.replace("@ARG", ArgTypeEnum.SLAVE1.getArg()+" "+maqDTO.getCodigo());
 			}
 			
 			String[] commands = new String[]{
