@@ -5,6 +5,8 @@
  */
 package lapfarsc.qe.dashboard;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.sql.Connection;
 import java.sql.DriverManager;
 
@@ -12,12 +14,11 @@ import lapfarsc.qe.dashboard.business.HeadBusiness;
 import lapfarsc.qe.dashboard.business.Slave1Business;
 import lapfarsc.qe.dashboard.util.Dominios.ArgTypeEnum;
 
-import org.postgresql.util.PSQLException;
-
 public class InitLocal {
 
 	private static String POSTGRES_ADDRESS = "192.168.0.100:5432";
-
+	public static String PATH_MONITORAMENTO = "05-quantum/PW-output/";
+	
 	public static void main(String[] args) throws Exception{
 		/*
 		 ARGS:
@@ -28,25 +29,30 @@ public class InitLocal {
 			return;
 		}
 		
-		//TODO VERIFICAR SE JA ESTA EXECUTANDO
-		
-		
-		
+		//VERIFICAR SE JA ESTA EXECUTANDO
+		Runtime run = Runtime.getRuntime();
+		Process pr = run.exec("ps aux");
+		pr.waitFor();
+		BufferedReader buf = new BufferedReader(new InputStreamReader(pr.getInputStream()));
+		String line = "";
+		int i = 0;
+		while ((line=buf.readLine())!=null) {
+			if(line.indexOf("Dashboard4qe")!=-1){
+				if(i==1){
+					System.out.println("--> THERE IS ANOTHER PROCESS STILL RUNNING.");
+					return;
+				}
+				i++;
+			}
+		}
+				
 		ArgTypeEnum execType = ArgTypeEnum.getByName( args[0] );
 		if(execType != null){				
 			//ACESSAR POSTGRES
 			String url = "jdbc:postgresql://"+POSTGRES_ADDRESS+"/dashboard4qe?user=postgres&password=postgres";
 			Connection conn = null;
-			try {	
-				try {
-					conn = DriverManager.getConnection(url);
-				} catch (PSQLException ce) {
-					if(ce.getMessage().indexOf("refused")!=-1){
-						conn = DriverManager.getConnection(url.replace(POSTGRES_ADDRESS, "localhost"));	
-					}else{
-						throw ce;
-					}
-				}
+			try {
+				conn = DriverManager.getConnection(url);				
 				//iniciar tarefa
 				switch (execType) {
 				case HEAD:
@@ -55,9 +61,10 @@ public class InitLocal {
 					break;
 				case SLAVE1:						
 					Slave1Business slave1 = new Slave1Business(conn, Integer.parseInt(args[1]));
-					slave1.gravarJarLeitura();
-					//slave1.lerTodosProcessos();
-					//slave1.analisarTodosOutputs();
+					slave1.lerTodosProcessos();
+					if( slave1.analisarTodosOutputs() ){ //se teve novidades
+						slave1.gravarJarLeitura();
+					}	
 					break;						
 				default:
 					System.out.println("--> Arg0 NOT FOUND.");

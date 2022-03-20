@@ -9,9 +9,6 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.net.NoRouteToHostException;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.util.ArrayList;
 import java.util.List;
 
 import lapfarsc.qe.dashboard.dto.CmdTopDTO;
@@ -29,20 +26,20 @@ import com.jcraft.jsch.UserInfo;
 
 public class HeadBusiness {
 	
-	private Connection conn = null;
+	private DatabaseBusiness db = null;
 	private List<MaquinaDTO> listMaquinaDTO = null;
 	
 	public HeadBusiness(Connection conn){
-		this.conn = conn;
+		this.db = new DatabaseBusiness(conn);
 	}
 	
 	public void acessarTodasMaquinas() throws Exception {
-		this.selectListMaquinaDTO();
+		this.listMaquinaDTO = db.selectListMaquinaDTO();
 		for (MaquinaDTO maqDTO : listMaquinaDTO) {			
 			sshInicialMaquinaDTO(maqDTO);
 		}		
-		updateOfflineTodasMaquinasDTO();		
-		updateOnlineMaquinasDTO();		
+		db.updateOfflineTodasMaquinasDTO();		
+		db.updateOnlineMaquinasDTO(this.listMaquinaDTO);		
 	}
 	
 		
@@ -60,7 +57,7 @@ public class HeadBusiness {
 			//acionamento do SLAVE1 para as maquinas ON
 			if(maqDTO.getOnline() && 
 					!maqDTO.getIgnorar()){
-				ComandoDTO comandoDTO = selectComandoDTO( ComandoEnum.JAVA_JAR.getIndex() );
+				ComandoDTO comandoDTO = db.selectComandoDTO( ComandoEnum.JAVA_JAR.getIndex() );
 				if(comandoDTO==null){
 					return;
 				}
@@ -123,7 +120,6 @@ public class HeadBusiness {
 		//System.out.println(cabecalho);
 		CmdTopDTO dto = new CmdTopDTO();
 		
-		BigDecimal used[] = new BigDecimal[2];		
 		String kw = "%Cpu(s):";
 		int kwid = cabecalho.indexOf(kw);
 		if(kwid!=-1){
@@ -172,95 +168,5 @@ public class HeadBusiness {
 		return session;
 	}
 	
-	
-	private void updateOfflineTodasMaquinasDTO() throws Exception {
-		PreparedStatement ps = null;
-		try{
-			ps = conn.prepareStatement("UPDATE maquina SET online=FALSE ");
-			ps.executeUpdate();
-		}finally{
-			if(ps!=null) ps.close();
-		}
-	}
-	
-	private void updateOnlineMaquinasDTO() throws Exception {		
-		PreparedStatement ps = null;
-		try{
-			ps = conn.prepareStatement("UPDATE maquina SET online=?, cpuused=?, memused=?, ultimoacesso=NOW() WHERE codigo = ? ");
-			for (MaquinaDTO m : listMaquinaDTO) {
-				if(m.getOnline()){
-					int p = 1;
-					ps.setBoolean(p++, m.getOnline()); 
-					ps.setBigDecimal(p++, m.getCpuUsed());
-					ps.setBigDecimal(p++, m.getMemUsed());
-					ps.setInt(p++, m.getCodigo());
-					ps.executeUpdate();
-				}
-			}
-		}finally{
-			if(ps!=null) ps.close();
-		}
-	}
-	
-	private void selectListMaquinaDTO() throws Exception {
-		//listagem de maquinas		
-		PreparedStatement ps = null;
-		ResultSet rs = null;
-		try{
-			ps = conn.prepareStatement("SELECT " +
-					" codigo,nome,ssh,senha,rootpath,jarpath,mincpu,maxcpu," +
-					"	COALESCE(cpuused,0) AS cpuused, COALESCE(memused,0) AS memused," +
-					"   TO_CHAR(ultimoacesso,'dd/mm/yyyy HH:mm:ss') AS ultimoacesso," +
-					" iniciarjob,online,ignorar " +
-					" FROM maquina ORDER BY codigo");
-			rs = ps.executeQuery();
-			
-			this.listMaquinaDTO = new ArrayList<MaquinaDTO>();	
-			while(rs.next()){
-				MaquinaDTO maq = new MaquinaDTO();
-				maq.setCodigo(rs.getInt("codigo"));
-				maq.setNome(rs.getString("nome"));
-				maq.setSsh(rs.getString("ssh"));
-				maq.setSenha(rs.getString("senha"));
-				maq.setRootPath(rs.getString("rootpath"));
-				maq.setJarPath(rs.getString("jarpath"));
-				maq.setMinCpu(rs.getInt("mincpu"));
-				maq.setMaxCpu(rs.getInt("maxcpu"));
-				
-				maq.setCpuUsed(rs.getBigDecimal("cpuused"));
-				maq.setMemUsed(rs.getBigDecimal("memused"));
-				maq.setUltimoAcesso(rs.getString("ultimoacesso"));
-				
-				maq.setIniciarJob(rs.getBoolean("iniciarjob"));
-				maq.setOnline(rs.getBoolean("online"));
-				maq.setIgnorar(rs.getBoolean("ignorar"));
-				this.listMaquinaDTO.add(maq);
-			}			
-		}finally{
-			if(rs!=null) rs.close();
-			if(ps!=null) ps.close();
-		}
-	}
-	
-	private ComandoDTO selectComandoDTO(Integer id) throws Exception {
-		PreparedStatement ps = null;
-		ResultSet rs = null;
-		try{
-			ps = conn.prepareStatement("SELECT codigo,cmdtemplate,cmdprefixo FROM comando WHERE codigo = ? ");
-			ps.setInt(1, id);
-			rs = ps.executeQuery();			
-			if(rs.next()){
-				ComandoDTO dto = new ComandoDTO();
-				dto.setCodigo(rs.getInt("codigo"));
-				dto.setTemplate(rs.getString("cmdtemplate"));
-				dto.setPrefixo(rs.getString("cmdprefixo"));
-				return dto;
-			}			
-		}finally{
-			if(rs!=null) rs.close();
-			if(ps!=null) ps.close();
-		}
-		return null;
-	}
 		
 }

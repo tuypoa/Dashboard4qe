@@ -58,12 +58,13 @@ CREATE TABLE qeresumo (
   qearquivoin_codigo int not null REFERENCES qearquivoin (codigo),
   datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   hashoutput character(32) NOT NULL,
+  processar boolean NOT NULL DEFAULT TRUE,
   nome varchar(150) NOT NULL,
   tamanhokb real NOT NULL,
   qtdecpu smallint NOT NULL,
   ultimalida timestamp,
-  jobconcluido boolean NOT NULL DEFAULT FALSE,
-  jobexecutando boolean NOT NULL DEFAULT FALSE
+  concluido boolean NOT NULL DEFAULT FALSE,
+  executando boolean NOT NULL DEFAULT TRUE
 );
 
 CREATE TABLE qeleitura (
@@ -121,11 +122,12 @@ CREATE TABLE psaux (
   comando_codigo integer NOT NULL REFERENCES comando (codigo),  
   pid int NOT NULL,  
   datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  uid int NOT NULL,
+  uid varchar(50) NOT NULL,
   qearquivoin_codigo integer REFERENCES qearquivoin (codigo),
   qeresumo_codigo integer REFERENCES qeresumo (codigo),
   cpu numeric(5,2) NOT NULL,
   mem numeric(5,2) NOT NULL,
+  conteudo varchar(150) NOT NULL,
   PRIMARY KEY (maquina_codigo, comando_codigo, pid)
 );
 

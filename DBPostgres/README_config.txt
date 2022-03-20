@@ -14,5 +14,11 @@
 	root# gedit /etc/postgresql/9.3/main/pg_hba.conf
 		#ADD LINE:
 		host    all             all             all		        md5
+	root# gedit /etc/postgresql/9.3/main/postgresql.conf		
+		#CHANGE LINE:
+		*FROM:
+		 #listen_addresses = '0.0.0.0'	# what IP address(es) to listen on;
+		*TO: 
+		 listen_addresses = '*'	# what IP address(es) to listen on;
 	root# service postgresql restart
 

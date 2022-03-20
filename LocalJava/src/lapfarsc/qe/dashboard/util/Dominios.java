@@ -21,8 +21,7 @@ public class Dominios {
 	public enum ComandoEnum{
 		JAVA_JAR(1),
 		MPIRUN_PW(2),
-		PW(3),
-		PS_AUX(4);
+		PW(3);
 		int index;
 		ComandoEnum(int index){this.index=index;}
 		public int getIndex(){return this.index;}
