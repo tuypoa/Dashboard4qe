@@ -159,10 +159,11 @@ public class DatabaseBusiness {
 	public void incluirQeArquivoInDTO(QeArquivoInDTO dto) throws Exception {		
 		PreparedStatement ps = null;
 		try{
-			ps = conn.prepareStatement("INSERT INTO qearquivoin(hash,nome,conteudo,molecula_codigo) values (?,?,?,?)");
+			ps = conn.prepareStatement("INSERT INTO qearquivoin(hash,nome,descricao,conteudo,molecula_codigo) values (?,?,?,?,?)");
 			int p = 1;
 			ps.setString(p++, dto.getHash());
 			ps.setString(p++, dto.getNome());
+			ps.setString(p++, dto.getDescricao());
 			ps.setString(p++, dto.getConteudo());
 			ps.setInt(p++, dto.getMoleculaCodigo());
 			ps.executeUpdate();

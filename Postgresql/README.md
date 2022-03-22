@@ -1,24 +1,26 @@
 
-1. Install postgresql and change de password
-
-	root# apt-get install postgresql pgadmin3
+1. Install postgresql and change the password
+<pre>
+	root# apt-get install postgresql
 	root$ su postgres
 	postgres$ psql
 		> ALTER ROLE 'postgres' WITH PASSWORD 'postgres';
 		\q
+</pre>
+2. Execute DUMP.sql
 
-2. Execute DUMP.sql on PgAdmin3 console
-
-3. Change "firewall" config for postgresql
-
+3. Change access config 
+<pre>
 	root# gedit /etc/postgresql/9.3/main/pg_hba.conf
 		#ADD LINE:
 		host    all             all             all		        md5
+		
 	root# gedit /etc/postgresql/9.3/main/postgresql.conf		
 		#CHANGE LINE:
 		*FROM:
-		 #listen_addresses = '0.0.0.0'	# what IP address(es) to listen on;
+		 #listen_addresses = '0.0.0.0'
 		*TO: 
-		 listen_addresses = '*'	# what IP address(es) to listen on;
+		 listen_addresses = '*'
+		 
 	root# service postgresql restart
-
+</pre>

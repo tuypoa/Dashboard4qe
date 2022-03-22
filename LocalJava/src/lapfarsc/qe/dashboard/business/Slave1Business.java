@@ -19,8 +19,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
-
-import org.apache.commons.codec.digest.DigestUtils;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import lapfarsc.qe.dashboard.InitLocal;
 import lapfarsc.qe.dashboard.dto.CmdTopDTO;
@@ -32,6 +32,8 @@ import lapfarsc.qe.dashboard.dto.PsauxDTO;
 import lapfarsc.qe.dashboard.dto.QeArquivoInDTO;
 import lapfarsc.qe.dashboard.dto.QeResumoDTO;
 import lapfarsc.qe.dashboard.util.Dominios.ComandoEnum;
+
+import org.apache.commons.codec.digest.DigestUtils;
 
 public class Slave1Business {
 	
@@ -160,15 +162,39 @@ public class Slave1Business {
 					arquivoInDTO = new QeArquivoInDTO();
 					arquivoInDTO.setHash(md5);
 					arquivoInDTO.setNome(nome);
+					arquivoInDTO.setDescricao(parseNomeArquivoIn(nome));
 					arquivoInDTO.setMoleculaCodigo(moleculaDTO.getCodigo());
 					arquivoInDTO.setConteudo(loadTextFile(arquivoIn));
 					db.incluirQeArquivoInDTO(arquivoInDTO);
 				}
+				//System.out.println(parseNomeArquivoIn(nome));
 				return db.selectQeArquivoInDTOPeloHash(md5);
 			}
 		}
 		return null;
 	}
+	
+	private String parseNomeArquivoIn(String nome){
+		//UC-default_00_1macitentan-1maltitol-VEMRAI.in
+		try{ 
+			StringBuilder sb = new StringBuilder();
+			nome = nome.replace("UC-", "").replace(".in", "");
+			String s2 = nome.substring(nome.indexOf("_",nome.indexOf("_")+1)+1 );
+			sb.append( s2.substring(0,1) ).append(" ");
+			sb.append( s2.substring(1,2).toUpperCase() ).append(s2.substring(2, s2.indexOf("-")) );//Macitentan
+			if(s2.indexOf("-", s2.indexOf("-")+1) != -1){
+				sb.append(" : ").append( s2.substring(s2.indexOf("-")+1,s2.indexOf("-")+2) ).append(" ");
+				sb.append( s2.substring(s2.indexOf("-")+2, s2.indexOf("-")+3).toUpperCase() ).append( s2.substring(s2.indexOf("-")+3, s2.indexOf("-", s2.indexOf("-")+1) ) );//Maltitol
+			}
+			String s1 = nome.substring(0, nome.indexOf("_"));
+			s1 = s1.substring(0,1).toUpperCase() + s1.substring(1);
+			sb.append(" (").append( s1 ).append(")"); //(Default)
+			return sb.toString();
+		}catch (Exception e){
+			return nome.replace("UC-", "").replace(".in", "");	
+		}		
+	}
+	
 	
 	private QeResumoDTO localizarResumoDTO(QeArquivoInDTO arquivoInDTO) throws Exception{
 		MoleculaDTO moleculaDTO = db.selectMoleculaDTO( arquivoInDTO.getMoleculaCodigo() );
@@ -240,3 +266,4 @@ public class Slave1Business {
 		return null;
 	}
 }
+

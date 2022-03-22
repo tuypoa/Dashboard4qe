@@ -49,6 +49,7 @@ CREATE TABLE qearquivoin (
   datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   hash character(32) NOT NULL UNIQUE,
   nome varchar(150) NOT NULL,
+  descricao varchar(50),
   conteudo text NOT NULL,
   molecula_codigo integer NOT NULL REFERENCES molecula (codigo)
 );

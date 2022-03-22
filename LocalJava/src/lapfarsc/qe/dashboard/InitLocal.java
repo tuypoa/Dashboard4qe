@@ -16,7 +16,7 @@ import lapfarsc.qe.dashboard.util.Dominios.ArgTypeEnum;
 
 public class InitLocal {
 
-	private static String POSTGRES_ADDRESS = "192.168.0.100:5432";
+	private static String POSTGRES_ADDRESS = "192.168.0.106:5432";
 	public static String PATH_MONITORAMENTO = "05-quantum/PW-output/";
 	
 	public static void main(String[] args) throws Exception{

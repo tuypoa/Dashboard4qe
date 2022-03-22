@@ -5,6 +5,7 @@ public class QeArquivoInDTO {
 	private Integer codigo;
 	private String hash;
 	private String nome;
+	private String descricao;
 	private String conteudo;
 	private Integer moleculaCodigo;
 	
@@ -25,6 +26,12 @@ public class QeArquivoInDTO {
 	}
 	public void setNome(String nome) {
 		this.nome = nome;
+	}
+	public String getDescricao() {
+		return descricao;
+	}
+	public void setDescricao(String descricao) {
+		this.descricao = descricao;
 	}
 	public String getConteudo() {
 		return conteudo;
