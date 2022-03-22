@@ -3,7 +3,7 @@ package lapfarsc.qe.dashboard.dto;
 public class QeArquivoInDTO {
 
 	private Integer codigo;
-	private String hash;
+	private String hashMaqArq;
 	private String nome;
 	private String descricao;
 	private String conteudo;
@@ -15,11 +15,11 @@ public class QeArquivoInDTO {
 	public void setCodigo(Integer codigo) {
 		this.codigo = codigo;
 	}
-	public String getHash() {
-		return hash;
+	public String getHashMaqArq() {
+		return hashMaqArq;
 	}
-	public void setHash(String hash) {
-		this.hash = hash;
+	public void setHashMaqArq(String hashMaqArq) {
+		this.hashMaqArq = hashMaqArq;
 	}
 	public String getNome() {
 		return nome;

@@ -1,5 +1,4 @@
 ﻿/*
-DROP TABLE qeleitura;
 DROP TABLE jarleitura;
 DROP TABLE psaux;
 DROP TABLE qeinfoiteration;
@@ -47,7 +46,7 @@ CREATE TABLE molecula (
 CREATE TABLE qearquivoin (
   codigo serial NOT NULL PRIMARY KEY,
   datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  hash character(32) NOT NULL UNIQUE,
+  hashmaqarq character(32) NOT NULL UNIQUE,
   nome varchar(150) NOT NULL,
   descricao varchar(50),
   conteudo text NOT NULL,
@@ -66,14 +65,6 @@ CREATE TABLE qeresumo (
   ultimalida timestamp,
   concluido boolean NOT NULL DEFAULT FALSE,
   executando boolean NOT NULL DEFAULT TRUE
-);
-
-CREATE TABLE qeleitura (
-  codigo serial NOT NULL PRIMARY KEY,
-  jarleitura_codigo int not null REFERENCES jarleitura (codigo),
-  qeresumo_codigo int not null REFERENCES qeresumo (codigo),
-  datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  tamanhokb real NOT NULL
 );
 
 CREATE TABLE qeinfoscf (
@@ -103,10 +94,9 @@ CREATE TABLE maquina_qearquivoin (
   maquina_codigo integer not null REFERENCES maquina (codigo),
   qearquivoin_codigo integer not null REFERENCES qearquivoin (codigo),
   datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  path character varying(250) NOT NULL,	  
-  nomein character varying(100) NOT NULL,
-  nomeout character varying(100),	  
-  ordem int NOT NULL,
+  hasharqin character(32) NOT NULL,
+  rootpath character varying(250) NOT NULL,  
+  ordem int NOT NULL, 
   ignorar boolean NOT NULL DEFAULT FALSE,
   PRIMARY KEY (maquina_codigo, qearquivoin_codigo)
 );

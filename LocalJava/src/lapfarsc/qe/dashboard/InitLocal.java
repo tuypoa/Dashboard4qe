@@ -62,9 +62,7 @@ public class InitLocal {
 				case SLAVE1:						
 					Slave1Business slave1 = new Slave1Business(conn, Integer.parseInt(args[1]));
 					slave1.lerTodosProcessos();
-					if( slave1.analisarTodosOutputs() ){ //se teve novidades
-						slave1.gravarJarLeitura();
-					}	
+					slave1.analisarTodosOutputs(); //se teve novidades
 					break;						
 				default:
 					System.out.println("--> Arg0 NOT FOUND.");

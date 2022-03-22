@@ -10,6 +10,7 @@ import java.util.List;
 import lapfarsc.qe.dashboard.dto.ComandoDTO;
 import lapfarsc.qe.dashboard.dto.JarLeituraDTO;
 import lapfarsc.qe.dashboard.dto.MaquinaDTO;
+import lapfarsc.qe.dashboard.dto.MaquinaQeArquivoInDTO;
 import lapfarsc.qe.dashboard.dto.MoleculaDTO;
 import lapfarsc.qe.dashboard.dto.PsauxDTO;
 import lapfarsc.qe.dashboard.dto.QeArquivoInDTO;
@@ -131,19 +132,87 @@ public class DatabaseBusiness {
 	}
 	
 	/*
-	 * TABELA qearquivoin
+	 * TABELA maquina_qearquivoin
 	 */	
-	public QeArquivoInDTO selectQeArquivoInDTOPeloHash(String hash) throws Exception {
+	public MaquinaQeArquivoInDTO selectMaquinaQeArquivoInDTO(Integer maquinaId, Integer arqInId) throws Exception {
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try{
-			ps = conn.prepareStatement("SELECT codigo,hash,nome,conteudo,molecula_codigo FROM qearquivoin WHERE hash LIKE ? ");
-			ps.setString(1, hash);
+			ps = conn.prepareStatement("SELECT maquina_codigo,qearquivoin_codigo,hasharqin,rootpath,ordem,ignorar " +
+					" FROM maquina_qearquivoin WHERE maquina_codigo =? AND qearquivoin_codigo =? ");
+			ps.setInt(1, maquinaId);
+			ps.setInt(2, arqInId);
+			rs = ps.executeQuery();			
+			if(rs.next()){
+				MaquinaQeArquivoInDTO dto = new MaquinaQeArquivoInDTO();
+				dto.setMaquinaCodigo(rs.getInt("maquina_codigo"));
+				dto.setQeArquivoInCodigo(rs.getInt("qearquivoin_codigo"));
+				dto.setHashArqIn(rs.getString("hasharqin"));
+				dto.setRootPath(rs.getString("rootpath"));
+				dto.setOrdem(rs.getInt("ordem"));
+				dto.setIgnorar(rs.getBoolean("ignorar"));
+				return dto;
+			}			
+		}finally{
+			if(rs!=null) rs.close();
+			if(ps!=null) ps.close();
+		}
+		return null;
+	}
+		
+	public void incluirMaquinaQeArquivoInDTO(MaquinaQeArquivoInDTO dto) throws Exception {		
+		PreparedStatement ps = null;
+		try{
+			ps = conn.prepareStatement("INSERT INTO maquina_qearquivoin(" +
+					" maquina_codigo,qearquivoin_codigo,hasharqin,rootpath,ordem) values (?,?,?,?,0)");
+			int p = 1;
+			ps.setInt(p++, dto.getMaquinaCodigo());
+			ps.setInt(p++, dto.getQeArquivoInCodigo());
+			ps.setString(p++, dto.getHashArqIn());
+			ps.setString(p++, dto.getRootPath());
+			ps.executeUpdate();
+		}finally{
+			if(ps!=null) ps.close();
+		}
+	}	
+	
+	
+	/*
+	 * TABELA qearquivoin
+	 */	
+	public QeArquivoInDTO selectQeArquivoInDTOPeloHash(String hashMaqArq) throws Exception {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try{
+			ps = conn.prepareStatement("SELECT codigo,hashmaqarq,nome,conteudo,molecula_codigo FROM qearquivoin WHERE hashmaqarq LIKE ? ");
+			ps.setString(1, hashMaqArq);
 			rs = ps.executeQuery();			
 			if(rs.next()){
 				QeArquivoInDTO dto = new QeArquivoInDTO();
 				dto.setCodigo(rs.getInt("codigo"));
-				dto.setHash(rs.getString("hash"));
+				dto.setHashMaqArq(rs.getString("hashmaqarq"));
+				dto.setNome(rs.getString("nome"));
+				dto.setConteudo(rs.getString("conteudo"));
+				dto.setMoleculaCodigo(rs.getInt("molecula_codigo"));
+				return dto;
+			}			
+		}finally{
+			if(rs!=null) rs.close();
+			if(ps!=null) ps.close();
+		}
+		return null;
+	}
+	public QeArquivoInDTO selectQeArquivoInDTO(Integer id) throws Exception {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try{
+			ps = conn.prepareStatement("SELECT codigo,hashmaqarq,nome,conteudo,molecula_codigo FROM qearquivoin WHERE codigo =? ");
+			ps.setInt(1, id);
+			rs = ps.executeQuery();			
+			if(rs.next()){
+				QeArquivoInDTO dto = new QeArquivoInDTO();
+				dto.setCodigo(rs.getInt("codigo"));
+				dto.setHashMaqArq(rs.getString("hashmaqarq"));
 				dto.setNome(rs.getString("nome"));
 				dto.setConteudo(rs.getString("conteudo"));
 				dto.setMoleculaCodigo(rs.getInt("molecula_codigo"));
@@ -159,9 +228,9 @@ public class DatabaseBusiness {
 	public void incluirQeArquivoInDTO(QeArquivoInDTO dto) throws Exception {		
 		PreparedStatement ps = null;
 		try{
-			ps = conn.prepareStatement("INSERT INTO qearquivoin(hash,nome,descricao,conteudo,molecula_codigo) values (?,?,?,?,?)");
+			ps = conn.prepareStatement("INSERT INTO qearquivoin(hashmaqarq,nome,descricao,conteudo,molecula_codigo) values (?,?,?,?,?)");
 			int p = 1;
-			ps.setString(p++, dto.getHash());
+			ps.setString(p++, dto.getHashMaqArq());
 			ps.setString(p++, dto.getNome());
 			ps.setString(p++, dto.getDescricao());
 			ps.setString(p++, dto.getConteudo());
@@ -207,6 +276,36 @@ public class DatabaseBusiness {
 		return null;
 	}
 	
+	public List<QeResumoDTO> selectQeResumoDTOAProcessar() throws Exception {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		List<QeResumoDTO> listDTO = new ArrayList<QeResumoDTO>();
+		try{
+			ps = conn.prepareStatement("SELECT codigo,qearquivoin_codigo,hashoutput,processar,nome,tamanhokb,qtdecpu," +					
+					"   TO_CHAR(ultimalida,'dd/mm/yyyy HH:mm:ss') AS ultimalida," +
+					"   concluido,executando FROM qeresumo " +
+					" WHERE processar = TRUE ORDER BY ultimalida ");
+			rs = ps.executeQuery();
+			while(rs.next()){
+				QeResumoDTO dto = new QeResumoDTO();
+				dto.setCodigo(rs.getInt("codigo"));
+				dto.setQeArquivoInCodigo(rs.getInt("qearquivoin_codigo"));
+				dto.setHashOutput(rs.getString("hashoutput"));
+				dto.setProcessar(rs.getBoolean("processar"));
+				dto.setNome(rs.getString("nome"));
+				dto.setTamanhoKb(rs.getDouble("tamanhokb"));
+				dto.setQtdeCpu(rs.getInt("qtdecpu"));
+				dto.setUltimaLida(rs.getString("ultimalida"));
+				dto.setConcluido(rs.getBoolean("concluido"));
+				dto.setExecutando(rs.getBoolean("executando"));
+				listDTO.add(dto);
+			}
+		}finally{
+			if(rs!=null) rs.close();
+			if(ps!=null) ps.close();
+		}
+		return listDTO;
+	}
 	public void incluirQeResumoDTO(QeResumoDTO dto) throws Exception {		
 		PreparedStatement ps = null;
 		try{
@@ -223,6 +322,33 @@ public class DatabaseBusiness {
 			if(ps!=null) ps.close();
 		}
 	}	
+	public void updateQeResumoDTOHash(QeResumoDTO dto) throws Exception {		
+		PreparedStatement ps = null;
+		try{
+			ps = conn.prepareStatement("UPDATE qeresumo SET " +
+					"  hashoutput=?, processar=TRUE, tamanhokb=?, executando=TRUE " +
+					" WHERE codigo = ?");
+			int p = 1;
+			ps.setString(p++, dto.getHashOutput());
+			ps.setDouble(p++, dto.getTamanhoKb());
+			ps.setInt(p++, dto.getCodigo());
+			ps.executeUpdate();
+		}finally{
+			if(ps!=null) ps.close();
+		}
+	}	
+	public void updateQeResumoDTOExecutando(QeResumoDTO dto) throws Exception {		
+		PreparedStatement ps = null;
+		try{
+			ps = conn.prepareStatement("UPDATE qeresumo SET executando=TRUE WHERE codigo = ?");
+			int p = 1;
+			ps.setInt(p++, dto.getCodigo());
+			ps.executeUpdate();
+		}finally{
+			if(ps!=null) ps.close();
+		}
+	}	
+	
 	
 	public void updateNaoExecutandoTodosQeResumoDTO(Integer maquinaCodigo) throws Exception {
 		PreparedStatement ps = null;
