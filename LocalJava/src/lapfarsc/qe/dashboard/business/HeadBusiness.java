@@ -55,8 +55,7 @@ public class HeadBusiness {
 			
 			String cmd = null;
 			//acionamento do SLAVE1 para as maquinas ON
-			if(maqDTO.getOnline() && 
-					!maqDTO.getIgnorar()){
+			if(maqDTO.getOnline() && !maqDTO.getIgnorar()){
 				ComandoDTO comandoDTO = db.selectComandoDTO( ComandoEnum.JAVA_JAR.getIndex() );
 				if(comandoDTO==null){
 					return;
@@ -96,6 +95,7 @@ public class HeadBusiness {
 						try{Thread.sleep(1000);}catch(Exception ee){}
 					}
 					in.close();
+					//System.out.println(sb.toString());
 				}
 			}			
 			CmdTopDTO cmdDTO = getCommandTopInfos(sb.toString());
@@ -113,6 +113,7 @@ public class HeadBusiness {
 			if(channel!=null && !channel.isClosed()) channel.disconnect();
 			if(session!=null) session.disconnect();
 		}
+		try{Thread.sleep(1000);}catch(Exception ee){}
 		//System.out.println(maqDTO.getSsh()+"> SSH DISCONNECTED: "+channel.getExitStatus());
 	}
 	

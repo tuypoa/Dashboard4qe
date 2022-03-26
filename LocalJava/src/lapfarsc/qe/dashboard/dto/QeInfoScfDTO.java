@@ -4,13 +4,11 @@ public class QeInfoScfDTO {
 
 	private Integer qeResumoCodigo;
 	private Integer scfCycles;
-	private Integer BfgsSteps;
-	private Boolean converged;
+	private Integer bfgsSteps;
 	private Double enthalpy;
 	private Double volume;
 	private Double density;
 	private Integer iterations;
-	private Double cputime;
 	private String cellparams;
 	private String atomicpositions;
 	
@@ -27,17 +25,12 @@ public class QeInfoScfDTO {
 		this.scfCycles = scfCycles;
 	}
 	public Integer getBfgsSteps() {
-		return BfgsSteps;
+		return bfgsSteps;
 	}
 	public void setBfgsSteps(Integer bfgsSteps) {
-		BfgsSteps = bfgsSteps;
+		this.bfgsSteps = bfgsSteps;
 	}
-	public Boolean getConverged() {
-		return converged;
-	}
-	public void setConverged(Boolean converged) {
-		this.converged = converged;
-	}
+	
 	public Double getEnthalpy() {
 		return enthalpy;
 	}
@@ -62,12 +55,7 @@ public class QeInfoScfDTO {
 	public void setIterations(Integer iterations) {
 		this.iterations = iterations;
 	}
-	public Double getCputime() {
-		return cputime;
-	}
-	public void setCputime(Double cputime) {
-		this.cputime = cputime;
-	}
+
 	public String getCellparams() {
 		return cellparams;
 	}

@@ -14,6 +14,8 @@ import lapfarsc.qe.dashboard.dto.MaquinaQeArquivoInDTO;
 import lapfarsc.qe.dashboard.dto.MoleculaDTO;
 import lapfarsc.qe.dashboard.dto.PsauxDTO;
 import lapfarsc.qe.dashboard.dto.QeArquivoInDTO;
+import lapfarsc.qe.dashboard.dto.QeInfoIterationDTO;
+import lapfarsc.qe.dashboard.dto.QeInfoScfDTO;
 import lapfarsc.qe.dashboard.dto.QeResumoDTO;
 
 public class DatabaseBusiness {
@@ -250,7 +252,7 @@ public class DatabaseBusiness {
 		try{
 			ps = conn.prepareStatement("SELECT codigo,qearquivoin_codigo,hashoutput,processar,nome,tamanhokb,qtdecpu," +					
 					"   TO_CHAR(ultimalida,'dd/mm/yyyy HH:mm:ss') AS ultimalida," +
-					"   concluido,executando FROM qeresumo " +
+					"   concluido,executando, erro FROM qeresumo " +
 					" WHERE qearquivoin_codigo = ? AND nome LIKE ? ");
 			ps.setInt(1, arquivoInCodigo);
 			ps.setString(2, nome);
@@ -267,6 +269,7 @@ public class DatabaseBusiness {
 				dto.setUltimaLida(rs.getString("ultimalida"));
 				dto.setConcluido(rs.getBoolean("concluido"));
 				dto.setExecutando(rs.getBoolean("executando"));
+				dto.setErro(rs.getString("erro"));
 				return dto;
 			}			
 		}finally{
@@ -310,13 +313,14 @@ public class DatabaseBusiness {
 		PreparedStatement ps = null;
 		try{
 			ps = conn.prepareStatement("INSERT INTO qeresumo(" +
-					"	qearquivoin_codigo,hashoutput,nome,tamanhokb,qtdecpu,ultimalida" +
-					" ) values (?,?,?,?,0,NOW())");
+					"	qearquivoin_codigo,hashoutput,nome,tamanhokb,executando,qtdecpu,ultimalida" +
+					" ) values (?,?,?,?,?,0,NOW())");
 			int p = 1;
 			ps.setInt(p++, dto.getQeArquivoInCodigo());
 			ps.setString(p++, dto.getHashOutput());
 			ps.setString(p++, dto.getNome());
 			ps.setDouble(p++, dto.getTamanhoKb());
+			ps.setBoolean(p++, dto.getExecutando());
 			ps.executeUpdate();
 		}finally{
 			if(ps!=null) ps.close();
@@ -326,11 +330,11 @@ public class DatabaseBusiness {
 		PreparedStatement ps = null;
 		try{
 			ps = conn.prepareStatement("UPDATE qeresumo SET " +
-					"  hashoutput=?, processar=TRUE, tamanhokb=?, executando=TRUE " +
-					" WHERE codigo = ?");
+					"  hashoutput=?, processar=TRUE, tamanhokb=?, executando=? WHERE codigo = ?");
 			int p = 1;
 			ps.setString(p++, dto.getHashOutput());
 			ps.setDouble(p++, dto.getTamanhoKb());
+			ps.setBoolean(p++, dto.getExecutando());
 			ps.setInt(p++, dto.getCodigo());
 			ps.executeUpdate();
 		}finally{
@@ -340,8 +344,9 @@ public class DatabaseBusiness {
 	public void updateQeResumoDTOExecutando(QeResumoDTO dto) throws Exception {		
 		PreparedStatement ps = null;
 		try{
-			ps = conn.prepareStatement("UPDATE qeresumo SET executando=TRUE WHERE codigo = ?");
+			ps = conn.prepareStatement("UPDATE qeresumo SET executando=? WHERE codigo = ?");
 			int p = 1;
+			ps.setBoolean(p++, dto.getExecutando());
 			ps.setInt(p++, dto.getCodigo());
 			ps.executeUpdate();
 		}finally{
@@ -349,12 +354,42 @@ public class DatabaseBusiness {
 		}
 	}	
 	
-	
 	public void updateNaoExecutandoTodosQeResumoDTO(Integer maquinaCodigo) throws Exception {
 		PreparedStatement ps = null;
 		try{
-			ps = conn.prepareStatement("UPDATE qeresumo SET executando=FALSE WHERE qearquivoin_codigo = ? ");
+			ps = conn.prepareStatement("UPDATE qeresumo SET executando=FALSE WHERE qearquivoin_codigo IN (" +
+					"	SELECT qearquivoin_codigo FROM maquina_qearquivoin WHERE maquina_codigo = ? ) ");
 			ps.setInt(1, maquinaCodigo);
+			ps.executeUpdate();
+		}finally{
+			if(ps!=null) ps.close();
+		}
+	}
+	public void updateQeResumoDTOQtdeCpu(QeResumoDTO dto) throws Exception {		
+		PreparedStatement ps = null;
+		try{
+			ps = conn.prepareStatement("UPDATE qeresumo SET qtdecpu=? WHERE codigo = ?");
+			int p = 1;
+			ps.setInt(p++, dto.getQtdeCpu());
+			ps.setInt(p++, dto.getCodigo());
+			ps.executeUpdate();
+		}finally{
+			if(ps!=null) ps.close();
+		}
+	}
+	public void updateQeResumoDTOSituacao(QeResumoDTO dto) throws Exception {		
+		PreparedStatement ps = null;
+		try{
+			ps = conn.prepareStatement("UPDATE qeresumo SET ultimalida= NOW(), concluido=?, processar=?, erro = ? WHERE codigo = ?");
+			int p = 1;
+			ps.setBoolean(p++, dto.getConcluido());
+			ps.setBoolean(p++, dto.getProcessar());
+			if(dto.getErro()==null){
+				ps.setNull(p++, Types.NULL);
+			}else{
+				ps.setString(p++, dto.getErro());
+			}
+			ps.setInt(p++, dto.getCodigo());
 			ps.executeUpdate();
 		}finally{
 			if(ps!=null) ps.close();
@@ -362,15 +397,83 @@ public class DatabaseBusiness {
 	}
 		
 	
+	/*
+	 * TABELA qeinfoscf
+	 */		
+	public QeInfoScfDTO selectQeInfoScfDTOUltimoPeloResumo(Integer resumoCodigo) throws Exception {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try{
+			ps = conn.prepareStatement("SELECT qeresumo_codigo,scfcycles,bfgssteps,enthalpy,volume,density,iterations FROM qeinfoscf " +
+					" WHERE qeresumo_codigo = ? ORDER BY scfcycles DESC LIMIT 1");
+			ps.setInt(1, resumoCodigo);
+			rs = ps.executeQuery();			
+			if(rs.next()){
+				QeInfoScfDTO dto = new QeInfoScfDTO();
+				dto.setQeResumoCodigo(rs.getInt("qeresumo_codigo"));
+				dto.setScfCycles(rs.getInt("scfcycles"));
+				dto.setBfgsSteps(rs.getInt("bfgssteps"));
+				dto.setEnthalpy(rs.getDouble("enthalpy"));
+				dto.setVolume(rs.getDouble("volume"));
+				dto.setDensity(rs.getDouble("density"));
+				dto.setIterations(rs.getInt("iterations"));
+				return dto;
+			}			
+		}finally{
+			if(rs!=null) rs.close();
+			if(ps!=null) ps.close();
+		}
+		return null;
+	}
+	public void incluirQeInfoScfDTO(QeInfoScfDTO dto) throws Exception {		
+		PreparedStatement ps = null;
+		try{
+			ps = conn.prepareStatement("INSERT INTO qeinfoscf(" +
+					" qeresumo_codigo,scfcycles,bfgssteps,enthalpy,volume,density,iterations,cellparams,atomicpositions" +
+					" ) values (?,?,?,?,?,?,?,?,?)");
+			int p = 1;
+			ps.setInt(p++, dto.getQeResumoCodigo());
+			ps.setInt(p++, dto.getScfCycles());
+			ps.setInt(p++, dto.getBfgsSteps());			
+			ps.setDouble(p++, dto.getEnthalpy());
+			ps.setDouble(p++, dto.getVolume());
+			ps.setDouble(p++, dto.getDensity());
+			ps.setInt(p++, dto.getIterations());
+			ps.setString(p++, dto.getCellparams());
+			ps.setString(p++, dto.getAtomicpositions());
+			ps.executeUpdate();
+		}finally{
+			if(ps!=null) ps.close();
+		}
+	}	
+	
+	/*
+	 * TABELA qeinfoiteration
+	 */		
+	public void incluirQeInfoIterationDTO(QeInfoIterationDTO dto) throws Exception {		
+		PreparedStatement ps = null;
+		try{
+			ps = conn.prepareStatement("INSERT INTO qeinfoiteration(qeresumo_codigo,scfcycles,iteration,cputime) values (?,?,?,?)");
+			int p = 1;
+			ps.setInt(p++, dto.getQeResumoCodigo());
+			ps.setInt(p++, dto.getScfCycles());
+			ps.setInt(p++, dto.getIteration());			
+			ps.setLong(p++, dto.getCputime());
+			ps.executeUpdate();
+		}finally{
+			if(ps!=null) ps.close();
+		}
+	}	
+	
 	
 	/*
 	 * TABELA psaux
 	 */	
-	public void incluirListPsauxDTO(List<PsauxDTO> listDTO) throws Exception {		
+	public void incluirListPsauxDTO(List<PsauxDTO> listDTO, Integer maquinaCodigo) throws Exception {		
 		PreparedStatement ps = null;
 		PreparedStatement psDel = null;
 		try{
-			psDel = conn.prepareStatement("TRUNCATE psaux");
+			psDel = conn.prepareStatement("DELETE FROM psaux WHERE maquina_codigo = "+maquinaCodigo);
 			psDel.executeUpdate();
 			
 			ps = conn.prepareStatement("INSERT INTO psaux(maquina_codigo,comando_codigo,pid,uid, " +

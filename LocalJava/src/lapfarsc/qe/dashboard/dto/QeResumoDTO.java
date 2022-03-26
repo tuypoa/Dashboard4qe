@@ -12,6 +12,7 @@ public class QeResumoDTO {
 	private String ultimaLida;
 	private Boolean concluido;
 	private Boolean executando;
+	private String erro;
 	
 	public Integer getCodigo() {
 		return codigo;
@@ -73,7 +74,12 @@ public class QeResumoDTO {
 	public void setExecutando(Boolean executando) {
 		this.executando = executando;
 	}
-	
+	public String getErro() {
+		return erro;
+	}
+	public void setErro(String erro) {
+		this.erro = erro;
+	}
 	
 	
 }

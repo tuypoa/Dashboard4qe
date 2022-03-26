@@ -1,11 +1,11 @@
 package lapfarsc.qe.dashboard.dto;
 
-public class QeInfoIteration {
+public class QeInfoIterationDTO {
 
 	private Integer qeResumoCodigo;
 	private Integer scfCycles;
 	private Integer iteration;
-	private Double cputime;
+	private Long cputime;
 	
 	public Integer getQeResumoCodigo() {
 		return qeResumoCodigo;
@@ -25,10 +25,10 @@ public class QeInfoIteration {
 	public void setIteration(Integer iteration) {
 		this.iteration = iteration;
 	}
-	public Double getCputime() {
+	public Long getCputime() {
 		return cputime;
 	}
-	public void setCputime(Double cputime) {
+	public void setCputime(Long cputime) {
 		this.cputime = cputime;
 	}
 	

@@ -64,19 +64,18 @@ CREATE TABLE qeresumo (
   qtdecpu smallint NOT NULL,
   ultimalida timestamp,
   concluido boolean NOT NULL DEFAULT FALSE,
-  executando boolean NOT NULL DEFAULT TRUE
+  executando boolean NOT NULL,
+  erro text
 );
 
 CREATE TABLE qeinfoscf (
   qeresumo_codigo int NOT NULL REFERENCES qeresumo (codigo),
   scfcycles smallint NOT NULL,
   bfgssteps smallint,
-  converged boolean,
   enthalpy real,
   volume real,
   density real,
   iterations smallint,
-  cputime real,
   cellparams text,
   atomicpositions text,
   PRIMARY KEY (qeresumo_codigo, scfcycles)
@@ -86,7 +85,7 @@ CREATE TABLE qeinfoiteration (
   qeresumo_codigo int NOT NULL REFERENCES qeresumo (codigo),
   scfcycles smallint NOT NULL,
   iteration smallint NOT NULL,  
-  cputime real not null,
+  cputime bigint not null,
   PRIMARY KEY (qeresumo_codigo, scfcycles, iteration)
 );
 

@@ -29,25 +29,26 @@ public class InitLocal {
 			return;
 		}
 		
-		//VERIFICAR SE JA ESTA EXECUTANDO
-		Runtime run = Runtime.getRuntime();
-		Process pr = run.exec("ps aux");
-		pr.waitFor();
-		BufferedReader buf = new BufferedReader(new InputStreamReader(pr.getInputStream()));
-		String line = "";
-		int i = 0;
-		while ((line=buf.readLine())!=null) {
-			if(line.indexOf("Dashboard4qe")!=-1){
-				if(i==1){
-					System.out.println("--> THERE IS ANOTHER PROCESS STILL RUNNING.");
-					return;
-				}
-				i++;
-			}
-		}
-				
 		ArgTypeEnum execType = ArgTypeEnum.getByName( args[0] );
-		if(execType != null){				
+		if(execType != null){
+			
+			//VERIFICAR SE JA ESTA EXECUTANDO
+			Runtime run = Runtime.getRuntime();
+			Process pr = run.exec("ps aux");
+			pr.waitFor();
+			BufferedReader buf = new BufferedReader(new InputStreamReader(pr.getInputStream()));
+			String line = "";
+			int i = 0;
+			while ((line=buf.readLine())!=null) {
+				if(line.indexOf("Dashboard4qe")!=-1 && line.indexOf(execType.getArg())==-1){
+					if(i==1){
+						System.out.println("--> THERE IS ANOTHER PROCESS STILL RUNNING.");
+						return;
+					}
+					i++;
+				}
+			}		
+			
 			//ACESSAR POSTGRES
 			String url = "jdbc:postgresql://"+POSTGRES_ADDRESS+"/dashboard4qe?user=postgres&password=postgres";
 			Connection conn = null;
@@ -62,7 +63,8 @@ public class InitLocal {
 				case SLAVE1:						
 					Slave1Business slave1 = new Slave1Business(conn, Integer.parseInt(args[1]));
 					slave1.lerTodosProcessos();
-					slave1.analisarTodosOutputs(); //se teve novidades
+					//sempre depois de ler os processos em execucao
+					slave1.analisarTodosOutputs();
 					break;						
 				default:
 					System.out.println("--> Arg0 NOT FOUND.");
@@ -75,5 +77,6 @@ public class InitLocal {
 		}else{
 			System.out.println("--> Arg0 NOT FOUND.");
 		}
-	}		
+		System.out.println("***");
+	}	
 }

@@ -7,6 +7,7 @@ package lapfarsc.qe.dashboard.business;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,8 +25,8 @@ import lapfarsc.qe.dashboard.InitLocal;
 import lapfarsc.qe.dashboard.dto.CmdTopDTO;
 import lapfarsc.qe.dashboard.dto.ComandoDTO;
 import lapfarsc.qe.dashboard.dto.JarLeituraDTO;
-import lapfarsc.qe.dashboard.dto.MaquinaQeArquivoInDTO;
 import lapfarsc.qe.dashboard.dto.MaquinaDTO;
+import lapfarsc.qe.dashboard.dto.MaquinaQeArquivoInDTO;
 import lapfarsc.qe.dashboard.dto.MoleculaDTO;
 import lapfarsc.qe.dashboard.dto.PsauxDTO;
 import lapfarsc.qe.dashboard.dto.QeArquivoInDTO;
@@ -129,9 +130,7 @@ public class Slave1Business {
 					listPsauxDTO.add(dto);
 				}
 			}		
-			db.incluirListPsauxDTO(listPsauxDTO);
-			
-			
+			db.incluirListPsauxDTO(listPsauxDTO, maquinaDTO.getCodigo());
 		}
 	}
 	
@@ -148,64 +147,100 @@ public class Slave1Business {
 		if(moleculaDTO!=null){
 			String rootPathArquivo = maquinaDTO.getRootPath()+File.separator+
 					moleculaDTO.getNome()+File.separator+
-					InitLocal.PATH_MONITORAMENTO; 
-			String filename = rootPathArquivo+nome;
+					InitLocal.PATH_MONITORAMENTO;
 			
-			File arquivoIn = new File(filename);
-			if(arquivoIn.exists() && arquivoIn.isFile()){		
-				InputStream is = Files.newInputStream(Paths.get(filename));
-				String hashArq = DigestUtils.md5Hex(is);				
-				is.close();
-				
-				String hashMaqArq = DigestUtils.md5Hex( maquinaDTO.getCodigo() +";"+ hashArq );				
-				QeArquivoInDTO arquivoInDTO = db.selectQeArquivoInDTOPeloHash(hashMaqArq);
-				if(arquivoInDTO==null){					
-					arquivoInDTO = new QeArquivoInDTO();
-					arquivoInDTO.setHashMaqArq(hashMaqArq);
-					arquivoInDTO.setNome(nome);
-					arquivoInDTO.setDescricao(parseNomeArquivoIn(nome));
-					arquivoInDTO.setMoleculaCodigo(moleculaDTO.getCodigo());
-					arquivoInDTO.setConteudo(loadTextFile(arquivoIn));
-					db.incluirQeArquivoInDTO(arquivoInDTO);
-				}
-				arquivoInDTO = db.selectQeArquivoInDTOPeloHash(hashMaqArq);
-				
-				//incluir vinculo com a maquina
-				MaquinaQeArquivoInDTO maDTO = db.selectMaquinaQeArquivoInDTO(maquinaDTO.getCodigo(), arquivoInDTO.getCodigo());
-				if(maDTO==null){
-					maDTO = new MaquinaQeArquivoInDTO();
-					maDTO.setMaquinaCodigo(maquinaDTO.getCodigo());
-					maDTO.setQeArquivoInCodigo(arquivoInDTO.getCodigo());
-					maDTO.setHashArqIn(hashArq);
-					maDTO.setRootPath( rootPathArquivo );
-					db.incluirMaquinaQeArquivoInDTO(maDTO);
-				}
-				//System.out.println(parseNomeArquivoIn(nome));
-				return arquivoInDTO;
-			}
+			return localizarArquivoInDTOPeloNome(nome, rootPathArquivo, moleculaDTO.getCodigo());
 		}
 		return null;
 	}
 	
+	private QeArquivoInDTO localizarArquivoInDTOPeloNome(String nome, String rootPathArquivo, Integer moleculaCodigo) throws Exception{
+		String filename = rootPathArquivo+File.separator+nome;
+		
+		File arquivoIn = new File(filename);
+		if(arquivoIn.exists() && arquivoIn.isFile()){		
+			InputStream is = Files.newInputStream(Paths.get(filename));
+			String hashArq = DigestUtils.md5Hex(is);				
+			is.close();
+			
+			String hashMaqArq = DigestUtils.md5Hex( maquinaDTO.getCodigo() +";"+ hashArq );				
+			QeArquivoInDTO arquivoInDTO = db.selectQeArquivoInDTOPeloHash(hashMaqArq);
+			if(arquivoInDTO==null){	
+				arquivoInDTO = new QeArquivoInDTO();
+				arquivoInDTO.setHashMaqArq(hashMaqArq);
+				arquivoInDTO.setNome(nome);
+				arquivoInDTO.setDescricao(parseNomeArquivoIn(nome));
+				arquivoInDTO.setMoleculaCodigo(moleculaCodigo);
+				arquivoInDTO.setConteudo(loadTextFile(arquivoIn));
+				db.incluirQeArquivoInDTO(arquivoInDTO);
+			}
+			arquivoInDTO = db.selectQeArquivoInDTOPeloHash(hashMaqArq);
+			arquivoInDTO.setNome(nome); //caso tenha mais de 1 OUTPUT
+			
+			//incluir vinculo com a maquina
+			MaquinaQeArquivoInDTO maDTO = db.selectMaquinaQeArquivoInDTO(maquinaDTO.getCodigo(), arquivoInDTO.getCodigo());
+			if(maDTO==null){
+				maDTO = new MaquinaQeArquivoInDTO();
+				maDTO.setMaquinaCodigo(maquinaDTO.getCodigo());
+				maDTO.setQeArquivoInCodigo(arquivoInDTO.getCodigo());
+				maDTO.setHashArqIn(hashArq);
+				maDTO.setRootPath( arquivoIn.getParent()+File.separator );
+				db.incluirMaquinaQeArquivoInDTO(maDTO);
+			}
+			//System.out.println(parseNomeArquivoIn(nome));
+			return arquivoInDTO;
+		}
+		return null;
+	}
+	
+	private List<QeArquivoInDTO> localizarTodosArquivoInDTO() throws Exception {
+		List<QeArquivoInDTO> listArquivoInDTO = new ArrayList<QeArquivoInDTO>();		
+		List<MoleculaDTO> listMoleculaDTO = db.selectListMoleculaDTO();
+		for (MoleculaDTO m : listMoleculaDTO) {
+			String rootPathArquivo = maquinaDTO.getRootPath()+File.separator+
+				m.getNome()+File.separator+
+				InitLocal.PATH_MONITORAMENTO; 
+			
+			File pasta = new File(rootPathArquivo);
+			if(pasta.exists() && pasta.isDirectory()){				
+				File[] aIn = pasta.listFiles(new FileFilter() {	
+					@Override
+					public boolean accept(File arg0) {
+						return arg0.getName().toLowerCase().endsWith(".in");
+					}
+				});
+				for (File file : aIn) {
+					QeArquivoInDTO aDTO = localizarArquivoInDTOPeloNome(file.getName(), file.getParent(), m.getCodigo());
+					listArquivoInDTO.add(aDTO);
+				}
+			}
+		}
+		return listArquivoInDTO;
+	}
+	
+	
 	private String parseNomeArquivoIn(String nome){
 		//UC-default_00_1macitentan-1maltitol-VEMRAI.in
 		try{ 
-			StringBuilder sb = new StringBuilder();
-			nome = nome.replace("UC-", "").replace(".in", "");
-			String s2 = nome.substring(nome.indexOf("_",nome.indexOf("_")+1)+1 );
-			sb.append( s2.substring(0,1) ).append(" ");
-			sb.append( s2.substring(1,2).toUpperCase() ).append(s2.substring(2, s2.indexOf("-")) );//Macitentan
-			if(s2.indexOf("-", s2.indexOf("-")+1) != -1){
-				sb.append(" : ").append( s2.substring(s2.indexOf("-")+1,s2.indexOf("-")+2) ).append(" ");
-				sb.append( s2.substring(s2.indexOf("-")+2, s2.indexOf("-")+3).toUpperCase() ).append( s2.substring(s2.indexOf("-")+3, s2.indexOf("-", s2.indexOf("-")+1) ) );//Maltitol
+			if(nome.startsWith("UC-")){
+				StringBuilder sb = new StringBuilder();
+				nome = nome.replace("UC-", "").replace(".in", "");
+				String s2 = nome.substring(nome.indexOf("_",nome.indexOf("_")+1)+1 );
+				sb.append( s2.substring(0,1) ).append(" ");
+				sb.append( s2.substring(1,2).toUpperCase() ).append(s2.substring(2, s2.indexOf("-")) );//Macitentan
+				if(s2.indexOf("-", s2.indexOf("-")+1) != -1){
+					sb.append(" : ").append( s2.substring(s2.indexOf("-")+1,s2.indexOf("-")+2) ).append(" ");
+					sb.append( s2.substring(s2.indexOf("-")+2, s2.indexOf("-")+3).toUpperCase() ).append( s2.substring(s2.indexOf("-")+3, s2.indexOf("-", s2.indexOf("-")+1) ) );//Maltitol
+				}
+				String s1 = nome.substring(0, nome.indexOf("_"));
+				s1 = s1.substring(0,1).toUpperCase() + s1.substring(1);
+				sb.append(" (").append( s1 ).append(")"); //(Default)
+				return sb.toString();
 			}
-			String s1 = nome.substring(0, nome.indexOf("_"));
-			s1 = s1.substring(0,1).toUpperCase() + s1.substring(1);
-			sb.append(" (").append( s1 ).append(")"); //(Default)
-			return sb.toString();
 		}catch (Exception e){
-			return nome.replace("UC-", "").replace(".in", "");	
-		}		
+			//ignore
+		}	
+		return nome.replace("UC-", "").replace(".in", "");	
 	}
 	
 	
@@ -229,13 +264,16 @@ public class Slave1Business {
 				resumoDTO.setHashOutput(md5);
 				resumoDTO.setNome(nome);
 				resumoDTO.setTamanhoKb(tamanhoKb);
+				resumoDTO.setExecutando(Boolean.TRUE);
 				db.incluirQeResumoDTO(resumoDTO);
 			}else if(!resumoDTO.getHashOutput().equals(md5)){
 				//atualizar hashoutput , tamanhokb, executando
 				resumoDTO.setHashOutput(md5);
 				resumoDTO.setTamanhoKb(tamanhoKb);
+				resumoDTO.setExecutando(Boolean.TRUE);
 				db.updateQeResumoDTOHash(resumoDTO);
 			}else{
+				resumoDTO.setExecutando(Boolean.TRUE);
 				db.updateQeResumoDTOExecutando(resumoDTO);
 			}
 		}
@@ -243,21 +281,53 @@ public class Slave1Business {
 	}
 	
 	public void analisarTodosOutputs() throws Exception {
-		OutputQeBusiness ob = new OutputQeBusiness(db);
 		
-		//analisar os em andamento: processar TRUE
-		List<QeResumoDTO> listResumoDTO = db.selectQeResumoDTOAProcessar();
-		for (QeResumoDTO qeResumoDTO : listResumoDTO) {				
-			MoleculaDTO mol = db.selectMoleculaDTO(db.selectQeArquivoInDTO( qeResumoDTO.getQeArquivoInCodigo()).getMoleculaCodigo());				
-			String filename = maquinaDTO.getRootPath()+File.separator+
-					mol.getNome()+File.separator+
-					InitLocal.PATH_MONITORAMENTO+qeResumoDTO.getNome();
+		//ATUALIZAR OS CONCLUIDOS ou INTERROMPIDOS
+		List<QeArquivoInDTO> listArqIn = localizarTodosArquivoInDTO();
+		for (QeArquivoInDTO qaiDTO : listArqIn) {
+			System.out.println(qaiDTO.getNome());
+			MaquinaQeArquivoInDTO maDTO = db.selectMaquinaQeArquivoInDTO(maquinaDTO.getCodigo(), qaiDTO.getCodigo());
+			String nomeOut = qaiDTO.getNome().substring(0, qaiDTO.getNome().lastIndexOf("."))+".out";
+			//listar todos .OUT
+			String filename = maDTO.getRootPath()+nomeOut;			
 			File arquivoOut = new File(filename);
-			ob.processarArquivoOutput(qeResumoDTO, arquivoOut);
+			if(arquivoOut.exists() && arquivoOut.isFile()){
+				InputStream is = Files.newInputStream(Paths.get(filename));
+				String md5 = DigestUtils.md5Hex(is);
+				is.close();	
+				double tamanhoKb = (double) ((double) Files.size(Paths.get(filename))) / 1024;
+				
+				QeResumoDTO qrDTO = db.selectQeResumoDTOPeloNome(qaiDTO.getCodigo(), nomeOut);
+				if(qrDTO==null){		
+					qrDTO = new QeResumoDTO();
+					qrDTO.setQeArquivoInCodigo(qaiDTO.getCodigo());
+					qrDTO.setHashOutput(md5);
+					qrDTO.setNome(nomeOut);
+					qrDTO.setTamanhoKb(tamanhoKb);
+					qrDTO.setExecutando(Boolean.FALSE);
+					db.incluirQeResumoDTO(qrDTO);
+				}else if(!qrDTO.getExecutando()){
+					if(!qrDTO.getHashOutput().equals(md5)){
+						//atualizar hashoutput , tamanhokb, executando
+						qrDTO.setHashOutput(md5);
+						qrDTO.setTamanhoKb(tamanhoKb);
+						qrDTO.setExecutando(Boolean.FALSE);
+						db.updateQeResumoDTOHash(qrDTO);
+					}else{
+						qrDTO.setExecutando(Boolean.FALSE);
+						db.updateQeResumoDTOExecutando(qrDTO);
+					}
+				}
+			}
 		}
 		
-		//TODO ATUALIZAR OS CONCLUIDOS ou INTERROMPIDOS
-		//listar todos .OUT e verificar hash do database
+		OutputQeBusiness ob = new OutputQeBusiness(db);
+		//analisar os em andamento: processar TRUE
+		List<QeResumoDTO> listResumoDTO = db.selectQeResumoDTOAProcessar();
+		for (QeResumoDTO qeResumoDTO : listResumoDTO) {
+			MaquinaQeArquivoInDTO maDTO = db.selectMaquinaQeArquivoInDTO(maquinaDTO.getCodigo(), qeResumoDTO.getQeArquivoInCodigo());			
+			ob.processarArquivoOutput(qeResumoDTO, new File( maDTO.getRootPath()+qeResumoDTO.getNome() ));
+		}
 		
 		if(listResumoDTO.size()>0 ){ //OU TEVE concluidos 
 			this.gravarJarLeitura();
