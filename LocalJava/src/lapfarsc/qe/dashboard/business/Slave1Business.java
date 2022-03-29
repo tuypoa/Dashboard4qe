@@ -258,7 +258,7 @@ public class Slave1Business {
 			is.close();			
 			double tamanhoKb = (double) ((double) Files.size(Paths.get(filename))) / 1024;
 			
-			if(resumoDTO==null){
+			if(resumoDTO==null || (!resumoDTO.getHashOutput().equals(md5) && tamanhoKb<resumoDTO.getTamanhoKb() )){
 				resumoDTO = new QeResumoDTO();
 				resumoDTO.setQeArquivoInCodigo(arquivoInDTO.getCodigo());
 				resumoDTO.setHashOutput(md5);
@@ -266,6 +266,8 @@ public class Slave1Business {
 				resumoDTO.setTamanhoKb(tamanhoKb);
 				resumoDTO.setExecutando(Boolean.TRUE);
 				db.incluirQeResumoDTO(resumoDTO);
+				resumoDTO = db.selectQeResumoDTOPeloNome(arquivoInDTO.getCodigo(), nome);
+				
 			}else if(!resumoDTO.getHashOutput().equals(md5)){
 				//atualizar hashoutput , tamanhokb, executando
 				resumoDTO.setHashOutput(md5);
@@ -276,6 +278,7 @@ public class Slave1Business {
 				resumoDTO.setExecutando(Boolean.TRUE);
 				db.updateQeResumoDTOExecutando(resumoDTO);
 			}
+			
 		}
 		return resumoDTO;
 	}

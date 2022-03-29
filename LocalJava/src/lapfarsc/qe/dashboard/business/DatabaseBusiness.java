@@ -251,9 +251,9 @@ public class DatabaseBusiness {
 		ResultSet rs = null;
 		try{
 			ps = conn.prepareStatement("SELECT codigo,qearquivoin_codigo,hashoutput,processar,nome,tamanhokb,qtdecpu," +					
-					"   TO_CHAR(ultimalida,'dd/mm/yyyy HH:mm:ss') AS ultimalida," +
+					"   TO_CHAR(ultimalida,'DD/MM/YYYY HH24:MI:SS') AS ultimalida," +
 					"   concluido,executando, erro FROM qeresumo " +
-					" WHERE qearquivoin_codigo = ? AND nome LIKE ? ");
+					" WHERE qearquivoin_codigo = ? AND nome LIKE ? ORDER BY codigo DESC LIMIT 1 ");
 			ps.setInt(1, arquivoInCodigo);
 			ps.setString(2, nome);
 			rs = ps.executeQuery();			
@@ -285,7 +285,7 @@ public class DatabaseBusiness {
 		List<QeResumoDTO> listDTO = new ArrayList<QeResumoDTO>();
 		try{
 			ps = conn.prepareStatement("SELECT codigo,qearquivoin_codigo,hashoutput,processar,nome,tamanhokb,qtdecpu," +					
-					"   TO_CHAR(ultimalida,'dd/mm/yyyy HH:mm:ss') AS ultimalida," +
+					"   TO_CHAR(ultimalida,'DD/MM/YYYY HH24:MI:SS') AS ultimalida," +
 					"   concluido,executando FROM qeresumo " +
 					" WHERE processar = TRUE ORDER BY ultimalida ");
 			rs = ps.executeQuery();
@@ -515,7 +515,7 @@ public class DatabaseBusiness {
 			ps = conn.prepareStatement("SELECT " +
 					" codigo,nome,ssh,senha,rootpath,jarpath,mincpu,maxcpu," +
 					"	COALESCE(cpuused,0) AS cpuused, COALESCE(memused,0) AS memused," +
-					"   TO_CHAR(ultimoacesso,'dd/mm/yyyy HH:mm:ss') AS ultimoacesso," +
+					"   TO_CHAR(ultimoacesso,'DD/MM/YYYY HH24:MI:SS') AS ultimoacesso," +
 					" iniciarjob,online,ignorar " +
 					" FROM maquina WHERE codigo = ? ");
 			ps.setInt(1, id);
@@ -556,7 +556,7 @@ public class DatabaseBusiness {
 			ps = conn.prepareStatement("SELECT " +
 					" codigo,nome,ssh,senha,rootpath,jarpath,mincpu,maxcpu," +
 					"	COALESCE(cpuused,0) AS cpuused, COALESCE(memused,0) AS memused," +
-					"   TO_CHAR(ultimoacesso,'dd/mm/yyyy HH:mm:ss') AS ultimoacesso," +
+					"   TO_CHAR(ultimoacesso,'DD/MM/YYYY HH24:MI:SS') AS ultimoacesso," +
 					" iniciarjob,online,ignorar " +
 					" FROM maquina ORDER BY ultimoacesso DESC");
 			rs = ps.executeQuery();
