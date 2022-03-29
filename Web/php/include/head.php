@@ -1,9 +1,12 @@
-<?php if($id_maquina==null) { ?>
-    <meta http-equiv="refresh" content="30">
-<?php } ?>
-<title>In&iacute;cio<?php if($id_maquina!=null) { 
+<meta http-equiv="refresh" content="30">
+<title>In&iacute;cio<?php 
+if($id_maquina!=null) { 
     echo " / M&aacute;quina / ".$maquina["nome"];
-}?></title>
+}
+if($id_molecula!=null) { 
+    echo " / ".$molecula["nome"];
+}
+?></title>
 <script>
     function selMaquina(id){
         window.location.href = 'maquina.php?mid='+id;

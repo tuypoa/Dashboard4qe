@@ -4,8 +4,8 @@ body{
     margin: 0; /* Space from this element (entire page) and others*/
     padding: 0; /*space from content and border*/
     border-left: solid 10px #f3c102;
-	border-bottom: solid 20px #f3c102;
-    border-right: solid 1px #f3c102;
+	border-bottom: solid 25px #f3c102;
+    border-right: solid 2px #f3c102;
     display:block;
     box-sizing: border-box;
 	background-color: #ffffff;

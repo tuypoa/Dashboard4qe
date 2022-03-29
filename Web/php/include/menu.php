@@ -11,11 +11,15 @@
 		<a href="index.php" style="color:#9f9f9f;">IN&Iacute;CIO</a><?php
         if($id_maquina!=null) { ?>
         / <span style="color:#9f9f9f;font-weight:bold;">M&aacute;quina</span>
-        <?php } ?>
+        <?php }
+		if($id_molecula!=null) { ?>
+			/ <span style="color:#9f9f9f;font-weight:bold;"><?php echo $molecula["nome"]; ?></span>
+			<?php }
+		?>
         
         <br><br>
 	</div>
-	<table cellspacing="0" cellpadding="3" border="0">
+	<table width="100%" cellspacing="0" cellpadding="0" border="0">
 		<!--<tr>
 		<td width="30"></td>
 		<td><span style="font-size:14px;font-weight:bold;">Mol&eacute;culas</span></td>
@@ -29,8 +33,8 @@
 			foreach ($rsBusca as $obj){
 				?>					
 				<tr>
-				<td width="30"></td>
-				<td><a href="molecula.php?molid=<?php echo $obj["codigo"]; ?>" 
+				<td width="30" height="35" <?php echo ($molecula!=null && $obj["codigo"]==$molecula["codigo"]?"bgcolor='#dedede'":""); ?>></td>
+				<td <?php echo ($molecula!=null && $obj["codigo"]==$molecula["codigo"]?"bgcolor='#dedede'":""); ?>><a href="molecula.php?molid=<?php echo $obj["codigo"]; ?>" 
                 style="font-size:14px;font-weight:bold;color:#666666;text-decoration:none;"><?php echo $obj["nome"]; ?></a></td>
 				</tr>
                 <tr><td colspan="2" height="1"></td></tr>

@@ -60,9 +60,12 @@ $query = "SELECT m.codigo, m.nome, m.cpuused, m.memused, m.online, m.ignorar,
 						<?php
 							$query2 = "SELECT concluido,executando,erro,tamanhokb,
 									TO_CHAR(datahora,'DD/MM HH24:MI') AS datahora,
-									TO_CHAR(ultimalida,'DD/MM HH24:MI') AS ultimalida
+									TO_CHAR(ultimalida,'DD/MM HH24:MI') AS ultimalida,
+									MAX(scfcycles) AS ciclos
 								FROM qeresumo r
-								WHERE r.codigo = :rid";
+									LEFT JOIN qeinfoscf qi ON qi.qeresumo_codigo = r.codigo
+								WHERE r.codigo = :rid
+								GROUP BY concluido,executando,erro,tamanhokb,datahora,ultimalida";
 							$stBusca2 = $con->prepare($query2);	
 							$stBusca2->bindParam(':rid', $obj["output_codigo"], PDO::PARAM_INT);
 							$stBusca2->execute();
@@ -71,8 +74,9 @@ $query = "SELECT m.codigo, m.nome, m.cpuused, m.memused, m.online, m.ignorar,
 									$op = $rsBusca2[0];
 									if($op["erro"]==null){
 									?>
-									<span class="<?php echo ($op["executando"]?"fblue":($op["concluido"]?"fgreen":"")); ?>" style="font-size:12px;font-weight:bold;" >EXECUTANDO</span>
-									<br><span style="font-size:12px;color:#9f9f9f;">In&iacute;cio <?php echo $op["datahora"]; ?></span>
+									<span class="<?php echo ($op["executando"]?"fblue":($op["concluido"]?"fgreen":"fred")); ?>" style="font-size:12px;font-weight:bold;" ><?php echo ($op["executando"]?"EXECUTANDO":($op["concluido"]?"CONCL&Iacute;DO":"INTERROMPIDO")); ?></span>
+									<br><span style="font-size:12px;color:#9f9f9f;font-weight:bold;"><?php echo $op["ciclos"]; ?> scf steps</span>
+									<br><span style="font-size:12px;color:#9f9f9f;"><?php echo number_format($op["tamanhokb"]/1024,2); ?> MB</span>
 									<?php 
 										if($op["concluido"]){
 										?><br><span style="font-size:12px;color:#9f9f9f;">Fim <?php echo $op["datahora"]; ?></span>
