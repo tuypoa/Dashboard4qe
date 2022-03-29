@@ -5,8 +5,6 @@
  */
 package lapfarsc.qe.dashboard;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.sql.Connection;
 import java.sql.DriverManager;
 
@@ -16,7 +14,8 @@ import lapfarsc.qe.dashboard.util.Dominios.ArgTypeEnum;
 
 public class InitLocal {
 
-	private static String POSTGRES_ADDRESS = "192.168.0.106:5432";
+	//private static String POSTGRES_ADDRESS = "192.168.0.106:5432"; //TROCAR!!!lightningbolt
+	private static String POSTGRES_ADDRESS = "localhost:5432"; //TROCAR!!!lightningbolt
 	public static String PATH_MONITORAMENTO = "05-quantum/PW-output/";
 	
 	public static void main(String[] args) throws Exception{
@@ -31,7 +30,7 @@ public class InitLocal {
 		
 		ArgTypeEnum execType = ArgTypeEnum.getByName( args[0] );
 		if(execType != null){
-			
+			/*
 			//VERIFICAR SE JA ESTA EXECUTANDO
 			Runtime run = Runtime.getRuntime();
 			Process pr = run.exec("ps aux");
@@ -40,14 +39,15 @@ public class InitLocal {
 			String line = "";
 			int i = 0;
 			while ((line=buf.readLine())!=null) {
-				if(line.indexOf("Dashboard4qe")!=-1 && line.indexOf(execType.getArg())==-1){
+				if(line.indexOf("Dashboard4qe")!=-1 && line.indexOf(execType.getArg())!=-1){
 					if(i==1){
 						System.out.println("--> THERE IS ANOTHER PROCESS STILL RUNNING.");
 						return;
 					}
 					i++;
 				}
-			}		
+			}	
+			*/	
 			
 			//ACESSAR POSTGRES
 			String url = "jdbc:postgresql://"+POSTGRES_ADDRESS+"/dashboard4qe?user=postgres&password=postgres";
