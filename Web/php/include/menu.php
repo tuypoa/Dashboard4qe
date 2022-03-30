@@ -1,3 +1,7 @@
+<table class="body_border" cellspacing="0" cellpadding="0" border="0" >
+<tr>		
+	<td valign="top">
+
 <div width="100%" height="100%" style="border-bottom: solid 1px #cccccc;">
 <table width="100%" cellspacing="0" cellpadding="5" >
 <tr>
@@ -6,7 +10,7 @@
 	<br>
 	
 	<div style="padding:10px;">
-		<span style="font-size:16px;font-weight:bold;color:#9f9f9f;">Monitoramento PWScf<br>Quantum Espresso</span>
+		<span style="font-size:16px;font-weight:bold;color:#8c8c8c;">Monitoramento PWScf<br>Quantum Espresso</span>
 		<br><br>
 		<a href="index.php" style="color:#9f9f9f;">IN&Iacute;CIO</a><?php
         if($id_maquina!=null) { ?>

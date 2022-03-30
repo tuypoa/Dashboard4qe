@@ -84,7 +84,8 @@ $query = "SELECT m.codigo, m.nome, m.cpuused, m.memused, m.online, m.ignorar,
 										}									
 									}else{
 										?>
-										<span class="fred" style="font-size:12px;font-weight:bold;" ><?php echo trim($obj["erro"]); ?></span>
+										<span class="fred" style="font-size:12px;font-weight:bold;" >N&#195;O CONVERGIU</span><br>
+										<span style="font-size:10px;color:#9f9f9f;" ><?php echo $op["erro"]; ?></span>
 										<?php
 									}								
 							}

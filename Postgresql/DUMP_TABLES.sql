@@ -24,7 +24,7 @@ CREATE TABLE maquina (
   cpuused numeric(5,2),
   memused numeric(5,2),
   ultimoacesso timestamp,  
-  iniciarjob boolean NOT NULL DEFAULT TRUE,
+  iniciarjob boolean NOT NULL DEFAULT FALSE,
   online boolean NOT NULL DEFAULT FALSE,
   ignorar boolean NOT NULL DEFAULT FALSE
 );

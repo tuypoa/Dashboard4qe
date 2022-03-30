@@ -3,12 +3,13 @@ require_once("../config/configuracao.php");
 require_once('phplot.php');
 
 $id_maquina = is_numeric($_GET["mid"])? $_GET["mid"] : NULL ;
+$ociosa = is_numeric($_GET["o"])? ($_GET["o"]=="1") : NULL ;
 
 $query = "
         SELECT datahora,cpuused,memused
         FROM jarleitura
         WHERE maquina_codigo = :mid
-        ORDER BY datahora DESC LIMIT 25
+        ORDER BY codigo DESC LIMIT 25
     	";
 
 $stBusca = $con->prepare($query);	
@@ -73,7 +74,11 @@ $plot->SetBackgroundColor('#ffffff');
 $plot->SetDrawPlotAreaBackground(true);
 $plot->SetPlotBgColor('#ffffff');
 
-$plot->SetDataColors(array('#4895ff','#3bb54a'));
+if($ociosa){
+	$plot->SetDataColors(array('red','#3bb54a'));
+}else{
+	$plot->SetDataColors(array('#4895ff','#3bb54a'));
+}
 $plot->SetDataValues($data);
  
 

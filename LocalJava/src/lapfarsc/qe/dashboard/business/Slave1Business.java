@@ -25,6 +25,7 @@ import lapfarsc.qe.dashboard.InitLocal;
 import lapfarsc.qe.dashboard.dto.CmdTopDTO;
 import lapfarsc.qe.dashboard.dto.ComandoDTO;
 import lapfarsc.qe.dashboard.dto.JarLeituraDTO;
+import lapfarsc.qe.dashboard.dto.MaqArqHashDTO;
 import lapfarsc.qe.dashboard.dto.MaquinaDTO;
 import lapfarsc.qe.dashboard.dto.MaquinaQeArquivoInDTO;
 import lapfarsc.qe.dashboard.dto.MoleculaDTO;
@@ -45,7 +46,7 @@ public class Slave1Business {
 		this.maquinaDTO = db.selectMaquinaDTO(maqId);
 	}
 
-	private void gravarJarLeitura() throws Exception {
+	private void gravarJarLeitura(boolean force) throws Exception {
 		Process process = Runtime.getRuntime().exec("top -bn1");
 		int exitCode = process.waitFor();
 		if (exitCode == 0) {
@@ -59,11 +60,13 @@ public class Slave1Business {
 			}
 			
 			CmdTopDTO cmdDTO = HeadBusiness.getCommandTopInfos(output);
-			JarLeituraDTO jlDTO = new JarLeituraDTO();
-			jlDTO.setCpuUsed( cmdDTO.getCpuUsed() );
-			jlDTO.setMemUsed( cmdDTO.getMemUsed() );
-			jlDTO.setMaquinaCodigo(maquinaDTO.getCodigo());
-			db.incluirJarLeituraDTO(jlDTO);
+			if(force || cmdDTO.getCpuUsed().doubleValue() < 60){
+				JarLeituraDTO jlDTO = new JarLeituraDTO();
+				jlDTO.setCpuUsed( cmdDTO.getCpuUsed() );
+				jlDTO.setMemUsed( cmdDTO.getMemUsed() );
+				jlDTO.setMaquinaCodigo(maquinaDTO.getCodigo());
+				db.incluirJarLeituraDTO(jlDTO);
+			}
 		}
 	}
 	
@@ -88,8 +91,8 @@ public class Slave1Business {
 								l = new ArrayList<String>();
 								map.put(tipo, l);
 							}
-							//System.out.println(line);
-							l.add(line);							
+							//System.out.println(line);							
+							l.add(line);
 							break;
 						case JAVA_JAR:
 							break;
@@ -119,6 +122,9 @@ public class Slave1Business {
 					dto.setCpu( BigDecimal.valueOf( Double.parseDouble(col[2].replace(",","."))) );
 					dto.setMem( BigDecimal.valueOf( Double.parseDouble(col[3].replace(",","."))) );
 					dto.setConteudo( p.substring( p.indexOf(col[9])+col[9].length()+1 ) );
+					if(dto.getConteudo().length()>=150){
+						dto.setConteudo(dto.getConteudo().substring(0,149));
+					}
 					QeArquivoInDTO arquivoInDTO = localizarArquivoInDTOPeloNome( col[col.length-1]);
 					if(arquivoInDTO!=null){
 						dto.setQeArquivoInCodigo(arquivoInDTO.getCodigo());
@@ -265,7 +271,7 @@ public class Slave1Business {
 				resumoDTO.setNome(nome);
 				resumoDTO.setTamanhoKb(tamanhoKb);
 				resumoDTO.setExecutando(Boolean.TRUE);
-				db.incluirQeResumoDTO(resumoDTO);
+				db.incluirQeResumoDTO(resumoDTO, maquinaDTO.getCodigo());
 				resumoDTO = db.selectQeResumoDTOPeloNome(arquivoInDTO.getCodigo(), nome);
 				
 			}else if(!resumoDTO.getHashOutput().equals(md5)){
@@ -308,7 +314,7 @@ public class Slave1Business {
 					qrDTO.setNome(nomeOut);
 					qrDTO.setTamanhoKb(tamanhoKb);
 					qrDTO.setExecutando(Boolean.FALSE);
-					db.incluirQeResumoDTO(qrDTO);
+					db.incluirQeResumoDTO(qrDTO, maquinaDTO.getCodigo());
 				}else if(!qrDTO.getExecutando()){
 					if(!qrDTO.getHashOutput().equals(md5)){
 						//atualizar hashoutput , tamanhokb, executando
@@ -332,9 +338,9 @@ public class Slave1Business {
 			ob.processarArquivoOutput(qeResumoDTO, new File( maDTO.getRootPath()+qeResumoDTO.getNome() ));
 		}
 		
-		if(listResumoDTO.size()>0 ){ //OU TEVE concluidos 
-			this.gravarJarLeitura();
-		}
+		//if(listResumoDTO.size()>0 ){ //OU TEVE concluidos 
+		this.gravarJarLeitura(listResumoDTO.size()>0); //OU TEVE concluidos
+		//}
 	}
 	
 	private String loadTextFile(File file) throws IOException {
@@ -365,5 +371,80 @@ public class Slave1Business {
 		}
 		return null;
 	}
+	
+	
+	
+	public void iniciarProcessos() throws Exception {		
+		if(db.verificarMaquinaCPUOciosa(maquinaDTO.getCodigo()) && maquinaDTO.getCpuUsed().doubleValue() < 80){
+			
+			//verificar se tem arquivo nela para executar
+			//TODO considerar arquivos interrompidos sem erro
+			List<MaqArqHashDTO> listHash = db.verificarArquivoElegivelParaExecutar(maquinaDTO.getCodigo());
+			
+			if(listHash.size()>0){
+				if(maquinaDTO.getIniciarJob()){ //AUTORIZADA NA ULTIMA LEITURA				
+					
+					MaqArqHashDTO executarDTO = listHash.get(0); //primeiro da lista
+					
+					//cmd mpirun -np @NCPU pw.x -in @QEARQIN > @QEARQOUT &
+					ComandoDTO cmdMpirun = db.selectComandoDTO(ComandoEnum.MPIRUN_PW.getIndex());
+					
+					String cmd = cmdMpirun.getTemplate();
+					cmd = cmd.replace("@NCPU", String.valueOf(maquinaDTO.getMinCpu()));
+					cmd = cmd.replace("@QEARQIN", executarDTO.getNomeArquivo() );
+					cmd = cmd.replace("@QEARQOUT", executarDTO.getNomeArquivo().substring(0, executarDTO.getNomeArquivo().lastIndexOf(".") )+".out" );
+										
+					//cmd = "sh -c 'cd "+executarDTO.getRootPath()+" && "+cmd+"'";					
+					System.out.println("INICIAR JOB: "+cmd);
+										
+					String s = null;
+					String pathHome = executarDTO.getRootPath().substring(0, executarDTO.getRootPath().indexOf("/","/home/".length())+1);					
+					ProcessBuilder builder = new ProcessBuilder("/bin/sh","-c","export PATH="+pathHome+InitLocal.PATH_PW_QUANTUM_ESPRESSO+":$PATH && " +
+							"cd "+executarDTO.getRootPath()+" && " +cmd);
+			        Process p = builder.start();
+			        System.out.println( p.waitFor() );
+			        
+					BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
+					BufferedReader stdError = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+					// read the output from the command
+					//System.out.println("Here is the standard output of the command:\n");
+					while ((s = stdInput.readLine()) != null) {
+						System.out.println(s);
+					}
+					// read any errors from the attempted command
+					//System.out.println("Here is the standard error of the command (if any):\n");
+					while ((s = stdError.readLine()) != null) {
+						System.out.println(s);
+					}					
+					//desligar "iniciarjob"
+					maquinaDTO.setIniciarJob(Boolean.FALSE);
+					db.updateMaquinaDTOIniciarJob(maquinaDTO);					
+				}else{
+					//System.out.println("not iniciar job");
+					//verificar se o arquivo ja nao foi, ou esta sendo, processado por outra maquina
+					for (MaqArqHashDTO hash: listHash) {
+						List<MaqArqHashDTO> hashOutraMaquina = db.verificarArquivoEmOutraMaquina(hash);
+						if(hashOutraMaquina.size()>0){
+							//arquivo ja foi executado ao menos 1 vez em outra maquina
+							//marcar para "ignorar" nessa
+							hash.setIgnorar(Boolean.TRUE);
+							db.updateMaquinaArquivoIgnorarExecucao(hash);
+						}else{
+							//autorizado a executar
+							//marcar para "ignorar" em outras maquinas
+							for (MaqArqHashDTO mOutra : hashOutraMaquina) {
+								mOutra.setIgnorar(Boolean.TRUE);
+								db.updateMaquinaArquivoIgnorarExecucao(mOutra);
+							}
+							//ligar "iniciarjob"
+							maquinaDTO.setIniciarJob(Boolean.TRUE);
+							db.updateMaquinaDTOIniciarJob(maquinaDTO);
+						}
+					}					
+				}
+			}
+		}		
+	}
+	
 }
 

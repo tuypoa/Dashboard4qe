@@ -9,8 +9,13 @@ require_once("config/configuracao.php");
 <?php
 	$query = "
 		SELECT m.codigo, m.nome, m.cpuused, m.memused, m.online, m.ignorar,
-			TO_CHAR(m.ultimoacesso,'DD/MM/YY HH24:MI:SS') AS ultimoacesso
+			TO_CHAR(m.ultimoacesso,'DD/MM/YY HH24:MI:SS') AS ultimoacesso,
+			m.mincpu, m.maxcpu, SUM(r.qtdecpu) AS cpu_emuso,
+			(COALESCE(SUM(r.qtdecpu),0) < m.maxcpu) as ociosa
 		FROM maquina m
+			LEFT JOIN maquina_qearquivoin ma ON m.codigo=ma.maquina_codigo
+			LEFT JOIN qeresumo r ON ma.qearquivoin_codigo=r.qearquivoin_codigo AND r.executando
+		GROUP BY m.codigo, m.nome, m.cpuused, m.memused, m.online, m.ignorar, m.ultimoacesso,m.mincpu, m.maxcpu
 		ORDER BY m.online, m.nome
 	    ";
 
@@ -19,7 +24,7 @@ require_once("config/configuracao.php");
 	$rsBusca = $stBusca->fetchAll(PDO::FETCH_ASSOC);
 	if(sizeof($rsBusca)>0){
 		$i = 0;
-		foreach ($rsBusca as $obj){
+		foreach ($rsBusca as $obj){	
 		
 			if($i++ % 3 == 0){ 
 				echo "<div class='row'>";
@@ -34,14 +39,14 @@ require_once("config/configuracao.php");
 			</tr>
 			<tr>
 			<td ><?php
-				echo "<span style='color:".($obj["cpuused"]<50?"red":"blue").";font-size:14px;font-weight:bold;'>".$obj["cpuused"]."% cpu</span><br>";
+				echo "<span style='color:".(!$obj["ignorar"] && $obj["ociosa"]?"red":"blue").";font-size:14px;font-weight:bold;'>".$obj["cpuused"]."% cpu</span><br>";
 				echo "<span style='color:green;font-size:13px;'>".$obj["memused"]."% Mem</span><br>";
 				echo "<span style='font-size:12px;'>".$obj["ultimoacesso"]."</span><br>";
 			?></td>
 			</tr>
 		</table>		
 		<?php if(!$obj["ignorar"]){ ?>
-				<img class="image" src="graph/graph_maquina_mini.php?mid=<?php echo $obj["codigo"]; ?>" width="145" height="60"/>
+				<img class="image" src="graph/graph_maquina_mini.php?mid=<?php echo $obj["codigo"]; ?>&o=<?php echo $obj["ociosa"]?"1":"0"; ?>" width="145" height="60"/>
 			<?php } ?>
 		</div>
 			<?php

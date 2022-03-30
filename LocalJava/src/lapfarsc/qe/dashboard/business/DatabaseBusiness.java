@@ -9,6 +9,7 @@ import java.util.List;
 
 import lapfarsc.qe.dashboard.dto.ComandoDTO;
 import lapfarsc.qe.dashboard.dto.JarLeituraDTO;
+import lapfarsc.qe.dashboard.dto.MaqArqHashDTO;
 import lapfarsc.qe.dashboard.dto.MaquinaDTO;
 import lapfarsc.qe.dashboard.dto.MaquinaQeArquivoInDTO;
 import lapfarsc.qe.dashboard.dto.MoleculaDTO;
@@ -309,18 +310,19 @@ public class DatabaseBusiness {
 		}
 		return listDTO;
 	}
-	public void incluirQeResumoDTO(QeResumoDTO dto) throws Exception {		
+	public void incluirQeResumoDTO(QeResumoDTO dto, Integer maquinaCodigo) throws Exception {		
 		PreparedStatement ps = null;
 		try{
 			ps = conn.prepareStatement("INSERT INTO qeresumo(" +
 					"	qearquivoin_codigo,hashoutput,nome,tamanhokb,executando,qtdecpu,ultimalida" +
-					" ) values (?,?,?,?,?,0,NOW())");
+					" ) values (?,?,?,?,?,(SELECT mincpu FROM maquina WHERE codigo=?),NOW())");
 			int p = 1;
 			ps.setInt(p++, dto.getQeArquivoInCodigo());
 			ps.setString(p++, dto.getHashOutput());
 			ps.setString(p++, dto.getNome());
 			ps.setDouble(p++, dto.getTamanhoKb());
 			ps.setBoolean(p++, dto.getExecutando());
+			ps.setInt(p++, maquinaCodigo);
 			ps.executeUpdate();
 		}finally{
 			if(ps!=null) ps.close();
@@ -617,5 +619,118 @@ public class DatabaseBusiness {
 			if(ps!=null) ps.close();
 		}
 	}
+	
+	public boolean verificarMaquinaCPUOciosa(Integer maquinaCodigo) throws Exception {		
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try{
+			ps = conn.prepareStatement(
+					"SELECT (COALESCE(SUM(r.qtdecpu),0) < m.maxcpu)  as ociosa "+
+					" FROM maquina m "+
+					"	LEFT JOIN maquina_qearquivoin ma ON m.codigo=ma.maquina_codigo "+
+					"	LEFT JOIN qeresumo r ON ma.qearquivoin_codigo=r.qearquivoin_codigo AND r.executando "+
+					" WHERE NOT m.ignorar "+ 
+					"	AND m.codigo = ? "+
+					" GROUP BY m.codigo, m.maxcpu");
+			ps.setInt(1, maquinaCodigo);
+			rs = ps.executeQuery();			
+			if(rs.next()){
+				return rs.getBoolean("ociosa");
+			}		
+		}finally{
+			if(rs!=null) rs.close();
+			if(ps!=null) ps.close();
+		}
+		return false; 
+	}
+	public List<MaqArqHashDTO> verificarArquivoElegivelParaExecutar(Integer maquinaCodigo) throws Exception {		
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		List<MaqArqHashDTO> listHash = new ArrayList<MaqArqHashDTO>(); 
+		try{
+			ps = conn.prepareStatement(
+					"SELECT ma.qearquivoin_codigo, ma.hasharqin, a.hashmaqarq, ma.rootpath, a.nome "+
+					" FROM maquina m "+
+					"	INNER JOIN maquina_qearquivoin ma ON m.codigo=ma.maquina_codigo "+
+					"	INNER JOIN qearquivoin a ON a.codigo=ma.qearquivoin_codigo "+
+					"	LEFT JOIN qeresumo r ON r.qearquivoin_codigo=a.codigo "+
+					" WHERE NOT m.ignorar AND NOT ma.ignorar AND m.codigo = ? "+
+					" GROUP BY ma.ordem, ma.qearquivoin_codigo, ma.hasharqin, a.hashmaqarq, ma.rootpath, a.nome "+
+					" HAVING COUNT(r.qearquivoin_codigo)=0 "+
+					" ORDER BY ma.ordem ASC");
+			ps.setInt(1, maquinaCodigo);
+			rs = ps.executeQuery();			
+			while(rs.next()){
+				MaqArqHashDTO dto = new MaqArqHashDTO();
+				dto.setMaquinaCodigo(maquinaCodigo);
+				dto.setArquivoInCodigo(rs.getInt("qearquivoin_codigo") );
+				dto.setHashArquivoIn(rs.getString("hasharqin") );
+				dto.setHashMaquinaArquivoIn(rs.getString("hashmaqarq") );
+				dto.setRootPath(rs.getString("rootpath") );
+				dto.setNomeArquivo(rs.getString("nome") );
+				listHash.add( dto );
+			}		
+		}finally{
+			if(rs!=null) rs.close();
+			if(ps!=null) ps.close();
+		}
+		return listHash; 
+	}
+	public List<MaqArqHashDTO> verificarArquivoEmOutraMaquina(MaqArqHashDTO hashDTO) throws Exception {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		List<MaqArqHashDTO> listHash = new ArrayList<MaqArqHashDTO>(); 
+		try{
+			ps = conn.prepareStatement(
+					"SELECT ma.maquina_codigo, ma.qearquivoin_codigo,ma.hasharqin, a.hashmaqarq "+
+					" FROM maquina m "+
+					"	INNER JOIN maquina_qearquivoin ma ON m.codigo=ma.maquina_codigo "+
+					"	INNER JOIN qearquivoin a ON a.codigo=ma.qearquivoin_codigo "+
+					"	INNER JOIN qeresumo r ON r.qearquivoin_codigo=a.codigo "+
+					" WHERE m.codigo != ? AND ma.hasharqin LIKE ? "+
+					" GROUP BY ma.maquina_codigo, ma.qearquivoin_codigo,ma.hasharqin,a.hashmaqarq");
+			ps.setInt(1, hashDTO.getMaquinaCodigo());
+			ps.setString(2, hashDTO.getHashArquivoIn());
+			rs = ps.executeQuery();			
+			while(rs.next()){
+				MaqArqHashDTO dto = new MaqArqHashDTO();
+				dto.setMaquinaCodigo( rs.getInt("maquina_codigo") );
+				dto.setArquivoInCodigo(rs.getInt("qearquivoin_codigo") );
+				dto.setHashArquivoIn(rs.getString("hasharqin") );
+				dto.setHashMaquinaArquivoIn(rs.getString("hashmaqarq") );
+				listHash.add( dto );
+			}		
+		}finally{
+			if(rs!=null) rs.close();
+			if(ps!=null) ps.close();
+		}
+		return listHash; 
+	}
+	public void updateMaquinaArquivoIgnorarExecucao(MaqArqHashDTO dto) throws Exception {		
+		PreparedStatement ps = null;
+		try{
+			ps = conn.prepareStatement("UPDATE maquina_qearquivoin SET ignorar=? WHERE maquina_codigo=? AND qearquivoin_codigo=? ");
+			int p = 1;
+			ps.setBoolean(p++, dto.getIgnorar());
+			ps.setInt(p++, dto.getMaquinaCodigo());
+			ps.setInt(p++, dto.getArquivoInCodigo());
+			ps.executeUpdate();
+		}finally{
+			if(ps!=null) ps.close();
+		}
+	}	
+	public void updateMaquinaDTOIniciarJob(MaquinaDTO dto) throws Exception {		
+		PreparedStatement ps = null;
+		try{
+			ps = conn.prepareStatement("UPDATE maquina SET iniciarjob=? WHERE codigo=?");
+			int p = 1;
+			ps.setBoolean(p++, dto.getIniciarJob());
+			ps.setInt(p++, dto.getCodigo());
+			ps.executeUpdate();
+		}finally{
+			if(ps!=null) ps.close();
+		}
+	}	
+
 	
 }

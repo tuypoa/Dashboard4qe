@@ -14,9 +14,10 @@ import lapfarsc.qe.dashboard.util.Dominios.ArgTypeEnum;
 
 public class InitLocal {
 
-	//private static String POSTGRES_ADDRESS = "192.168.0.106:5432"; //TROCAR!!!lightningbolt
+	//private static String POSTGRES_ADDRESS = "192.168.0.100:5432"; //TROCAR!!!lightningbolt
 	private static String POSTGRES_ADDRESS = "localhost:5432"; //TROCAR!!!lightningbolt
 	public static String PATH_MONITORAMENTO = "05-quantum/PW-output/";
+	public static String PATH_PW_QUANTUM_ESPRESSO = "Documents/qe-7.0/bin/";
 	
 	public static void main(String[] args) throws Exception{
 		/*
@@ -65,6 +66,8 @@ public class InitLocal {
 					slave1.lerTodosProcessos();
 					//sempre depois de ler os processos em execucao
 					slave1.analisarTodosOutputs();
+					//verificar se esta ociosa
+					slave1.iniciarProcessos();
 					break;						
 				default:
 					System.out.println("--> Arg0 NOT FOUND.");

@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.net.NoRouteToHostException;
 import java.sql.Connection;
+import java.util.ArrayList;
 import java.util.List;
 
 import lapfarsc.qe.dashboard.dto.CmdTopDTO;
@@ -35,15 +36,16 @@ public class HeadBusiness {
 	
 	public void acessarTodasMaquinas() throws Exception {
 		this.listMaquinaDTO = db.selectListMaquinaDTO();
+		List<MaquinaDTO> atualiza = new ArrayList<MaquinaDTO>(); 
 		for (MaquinaDTO maqDTO : listMaquinaDTO) {			
-			sshInicialMaquinaDTO(maqDTO);
+			atualiza.add( sshInicialMaquinaDTO(maqDTO) );
 		}		
 		db.updateOfflineTodasMaquinasDTO();		
-		db.updateOnlineMaquinasDTO(this.listMaquinaDTO);		
+		db.updateOnlineMaquinasDTO(atualiza);		
 	}
 	
 		
-	private void sshInicialMaquinaDTO(MaquinaDTO maqDTO) throws Exception{
+	private MaquinaDTO sshInicialMaquinaDTO(MaquinaDTO maqDTO) throws Exception{
 		Session session = null;
 		Channel channel = null;
 		try{				
@@ -58,7 +60,7 @@ public class HeadBusiness {
 			if(maqDTO.getOnline() && !maqDTO.getIgnorar()){
 				ComandoDTO comandoDTO = db.selectComandoDTO( ComandoEnum.JAVA_JAR.getIndex() );
 				if(comandoDTO==null){
-					return;
+					return maqDTO;
 				}
 				cmd = comandoDTO.getTemplate();
 				//java -jar @JARPATH @ARG &
@@ -101,7 +103,7 @@ public class HeadBusiness {
 			CmdTopDTO cmdDTO = getCommandTopInfos(sb.toString());
 			maqDTO.setCpuUsed( cmdDTO.getCpuUsed() );
 			maqDTO.setMemUsed( cmdDTO.getMemUsed() );
-		
+			
 		} catch (Throwable e) {
 			if(e.getCause() instanceof NoRouteToHostException){
 				maqDTO.setOnline( Boolean.FALSE );
@@ -114,6 +116,7 @@ public class HeadBusiness {
 			if(session!=null) session.disconnect();
 		}
 		try{Thread.sleep(1000);}catch(Exception ee){}
+		return maqDTO;
 		//System.out.println(maqDTO.getSsh()+"> SSH DISCONNECTED: "+channel.getExitStatus());
 	}
 	
@@ -138,7 +141,7 @@ public class HeadBusiness {
 		return dto;
 	}
 
-	private Session getSessionSSH(final String ssh, final String senha) throws Throwable {
+	public static Session getSessionSSH(final String ssh, final String senha) throws Throwable {
 		JSch jsch = new JSch();
 		String sshsp[] = ssh.split("@");
 		Session session = jsch.getSession(sshsp[0], sshsp[1], 22);

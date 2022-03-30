@@ -1,7 +1,7 @@
 <meta http-equiv="refresh" content="30">
-<title>In&iacute;cio<?php 
+<title>Monitoramento PWScf<?php 
 if($id_maquina!=null) { 
-    echo " / M&aacute;quina / ".$maquina["nome"];
+    echo " / ".$maquina["nome"];
 }
 if($id_molecula!=null) { 
     echo " / ".$molecula["nome"];
