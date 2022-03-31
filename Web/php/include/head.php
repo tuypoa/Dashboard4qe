@@ -6,6 +6,9 @@ if($id_maquina!=null) {
 if($id_molecula!=null) { 
     echo " / ".$molecula["nome"];
 }
+if($id_resumo!=null) { 
+    echo " / Resumo / ".$resumo["descricao"];
+}
 ?></title>
 <script>
     function selMaquina(id){

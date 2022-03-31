@@ -46,7 +46,7 @@ $plot->DrawGraph();
 //$plot->SetXTitle("Eixo X");
 //$plot->SetYTitle("Eixo Y");
 
-$plot->SetYTickIncrement(0.2);
+//$plot->SetYTickIncrement(0.2);
 $plot->SetPlotAreaWorld(0, 0, 25, 100);
 $plot->SetImageBorderType('plain');
 $plot->SetLineWidths(2);

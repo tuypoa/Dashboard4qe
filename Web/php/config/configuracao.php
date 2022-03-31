@@ -9,6 +9,8 @@ try{
 	die();
 }
 
+//setlocale(LC_ALL, "pt_BR.UTF-8");;
+
 //ini_set('display_startup_errors', 1);
 //error_reporting(E_ALL);
 ?>

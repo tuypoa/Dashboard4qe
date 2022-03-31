@@ -8,14 +8,14 @@ require_once("config/configuracao.php");
 <?php include_once 'include/menu.php'; ?>
 <?php
 	$query = "
-		SELECT m.codigo, m.nome, m.cpuused, m.memused, m.online, m.ignorar,
+		SELECT m.codigo, m.nome, m.cpuused, m.memused, m.online, m.ignorar, m.iniciarjob,
 			TO_CHAR(m.ultimoacesso,'DD/MM/YY HH24:MI:SS') AS ultimoacesso,
 			m.mincpu, m.maxcpu, SUM(r.qtdecpu) AS cpu_emuso,
 			(COALESCE(SUM(r.qtdecpu),0) < m.maxcpu) as ociosa
 		FROM maquina m
 			LEFT JOIN maquina_qearquivoin ma ON m.codigo=ma.maquina_codigo
 			LEFT JOIN qeresumo r ON ma.qearquivoin_codigo=r.qearquivoin_codigo AND r.executando
-		GROUP BY m.codigo, m.nome, m.cpuused, m.memused, m.online, m.ignorar, m.ultimoacesso,m.mincpu, m.maxcpu
+		GROUP BY m.codigo, m.nome, m.cpuused, m.memused, m.online, m.ignorar, m.iniciarjob, m.ultimoacesso,m.mincpu, m.maxcpu
 		ORDER BY m.online, m.nome
 	    ";
 
@@ -33,7 +33,7 @@ require_once("config/configuracao.php");
 		<table cellspacing="0" cellpadding="3" border="0" align="left" bgcolor="#ffffff" >
 		    <tr>
 			<td><?php
-				echo "<span style='font-size:14px;font-weight:bold;'>".$obj["nome"]."</span> ".($obj["online"]?"(Online)":"(Offline)");
+				echo "<span style='font-size:14px;font-weight:bold;'>".$obj["nome"]."</span><br>".($obj["online"]?($obj["iniciarjob"]?"Autorizada a iniciar processo...":"(Online)"):"(Offline)");
 			?>
 			</td>
 			</tr>

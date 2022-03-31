@@ -101,9 +101,9 @@
 </tr>
 <tr>	
 	<td align="center" style="font-size:10px;color:#9f9f9f;">
-		LABORAT&#211;RIO DE PLANEJAMENTO FARMAC&#202;UTICO E SIMULA&#199;&#195;O COMPUTACIONAL
+	LABORAT&Oacute;RIO DE PLANEJAMENTO FARMAC&Ecirc;UTICO E SIMULA&Ccedil;&Atilde;O COMPUTACIONAL
 		<br>
-		UFRJ - CENTRO DE CI&#202;NCIAS DA SA&#218;DE
+	UFRJ - CENTRO DE CI&Ecirc;NCIAS DA SA&Uacute;DE
 	</td>
 </tr>	
 </table>

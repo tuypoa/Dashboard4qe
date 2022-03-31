@@ -34,15 +34,15 @@ $query = "SELECT m.codigo, m.nome, m.cpuused, m.memused, m.online, m.ignorar,
 	<br><br>
 	<table width="100%" cellspacing="0" cellpadding="5" border="0" >
 	<?php
-		$query = "SELECT m.hasharqin, m.ordem, a.nome, a.codigo, a.descricao,
+		$query = "SELECT m.hasharqin, m.ordem, m.ignorar, a.nome, a.codigo, a.descricao,
 				mol.nome molecula_nome, max(r.codigo) output_codigo
 			FROM maquina_qearquivoin m
 				INNER JOIN qearquivoin a ON m.qearquivoin_codigo=a.codigo
 				INNER JOIN molecula mol ON mol.codigo=a.molecula_codigo
 				LEFT JOIN qeresumo r ON r.qearquivoin_codigo=a.codigo
 			WHERE m.maquina_codigo = :mid
-			GROUP BY m.hasharqin, m.ordem, a.nome, a.descricao, mol.nome, a.codigo
-			ORDER BY m.ordem, a.codigo ";
+			GROUP BY m.hasharqin, m.ordem, m.ignorar,a.nome, a.descricao, mol.nome, a.codigo
+			ORDER BY m.ordem, m.ignorar, a.nome, a.codigo ";
 		$stBusca = $con->prepare($query);	
 		$stBusca->bindParam(':mid', $id_maquina, PDO::PARAM_INT);
 		$stBusca->execute();
@@ -52,7 +52,7 @@ $query = "SELECT m.codigo, m.nome, m.cpuused, m.memused, m.online, m.ignorar,
 				?>					
 				<tr>
 				<!-- <td style="border-bottom: solid 1px #cccccc;" width="30"></td> -->
-				<td style="border-bottom: solid 1px #cccccc;"><span style="font-size:14px;"><?php echo $obj["descricao"]; ?></span><br>
+				<td style="border-bottom: solid 1px #cccccc;"><span style="font-size:14px;<?php echo $obj["ignorar"]?"text-decoration: line-through;color:#9f9f9f;":""; ?>"><?php echo $obj["descricao"]; ?></span><br>
 					<span style="font-size:12px;color:#9f9f9f;"><?php echo $obj["nome"]; ?><br>
 						hash md5: <?php echo $obj["hasharqin"]; ?></span></td>
 				<td style="border-bottom: solid 1px #cccccc;" align="center"><?php 
@@ -74,18 +74,20 @@ $query = "SELECT m.codigo, m.nome, m.cpuused, m.memused, m.online, m.ignorar,
 									$op = $rsBusca2[0];
 									if($op["erro"]==null){
 									?>
-									<span class="<?php echo ($op["executando"]?"fblue":($op["concluido"]?"fgreen":"fred")); ?>" style="font-size:12px;font-weight:bold;" ><?php echo ($op["executando"]?"EXECUTANDO":($op["concluido"]?"CONCL&Iacute;DO":"INTERROMPIDO")); ?></span>
+									<a href="resumo.php?rid=<?php echo $obj["output_codigo"]; ?>" class="<?php echo ($op["executando"]?"fblue":($op["concluido"]?"fgreen":"fred")); ?>" style="font-size:12px;font-weight:bold;" ><?php echo ($op["executando"]?"EM ANDAMENTO":($op["concluido"]?"CONCL&Iacute;DO":"INTERROMPIDO")); ?></a>
 									<br><span style="font-size:12px;color:#9f9f9f;font-weight:bold;"><?php echo $op["ciclos"]; ?> scf steps</span>
-									<br><span style="font-size:12px;color:#9f9f9f;"><?php echo number_format($op["tamanhokb"]/1024,2); ?> MB</span>
+									<span style="font-size:12px;color:#9f9f9f;">(<?php echo number_format($op["tamanhokb"]/1024,2); ?> MB)</span>
 									<?php 
 										if($op["concluido"]){
-										?><br><span style="font-size:12px;color:#9f9f9f;">Fim <?php echo $op["datahora"]; ?></span>
+										?><br><span style="font-size:12px;color:#9f9f9f;">Fim <?php echo $op["ultimalida"]; ?></span>
 										<?php 
 										}									
 									}else{
 										?>
-										<span class="fred" style="font-size:12px;font-weight:bold;" >N&#195;O CONVERGIU</span><br>
-										<span style="font-size:10px;color:#9f9f9f;" ><?php echo $op["erro"]; ?></span>
+										<a href="resumo.php?rid=<?php echo $obj["output_codigo"]; ?>" class="fred" style="font-size:12px;font-weight:bold;" >N&#195;O CONVERGIU</a>
+										<br><span style="font-size:12px;color:#9f9f9f;"><?php echo $op["ciclos"]; ?> scf steps</span>
+										<span style="font-size:12px;color:#9f9f9f;">(<?php echo number_format($op["tamanhokb"]/1024,2); ?> MB)</span>
+										<br><span style="font-size:10px;color:#9f9f9f;" ><?php echo $op["erro"]; ?></span>
 										<?php
 									}								
 							}
@@ -93,7 +95,7 @@ $query = "SELECT m.codigo, m.nome, m.cpuused, m.memused, m.online, m.ignorar,
 							$rsBusca2 = null;
 							$stBusca2->closeCursor();
 							?>
-					<?php }else{ ?><span style="font-size:12px;color:#9f9f9f;">SEM OUTPUT</span><?php } ?></td>	
+					<?php }else{ ?><span style="font-size:12px;color:#9f9f9f;"><?php echo $obj["ignorar"]?"INICIADO EM OUTRA":"<b>AGUARDANDO</b>"; ?></span><?php } ?></td>	
 				</tr>
 				<?php
 			}

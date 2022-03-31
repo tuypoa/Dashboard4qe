@@ -18,7 +18,10 @@
         <?php }
 		if($id_molecula!=null) { ?>
 			/ <span style="color:#9f9f9f;font-weight:bold;"><?php echo $molecula["nome"]; ?></span>
-			<?php }
+		<?php }
+		if($id_resumo!=null) { ?>
+				/ <span style="color:#9f9f9f;font-weight:bold;">Resumo</span>
+		<?php }
 		?>
         
         <br><br>
@@ -35,10 +38,12 @@
 		$rsBusca = $stBusca->fetchAll(PDO::FETCH_ASSOC);
 		if(sizeof($rsBusca)>0){
 			foreach ($rsBusca as $obj){
+				$selecionaMenu = ($molecula!=null && $obj["codigo"]==$molecula["codigo"]) ||
+							($resumo!=null && $obj["codigo"]==$resumo["molecula_codigo"]);
 				?>					
 				<tr>
-				<td width="30" height="35" <?php echo ($molecula!=null && $obj["codigo"]==$molecula["codigo"]?"bgcolor='#dedede'":""); ?>></td>
-				<td <?php echo ($molecula!=null && $obj["codigo"]==$molecula["codigo"]?"bgcolor='#dedede'":""); ?>><a href="molecula.php?molid=<?php echo $obj["codigo"]; ?>" 
+				<td width="30" height="35" <?php echo ($selecionaMenu?"bgcolor='#dedede'":""); ?>></td>
+				<td <?php echo ($selecionaMenu?"bgcolor='#dedede'":""); ?>><a href="molecula.php?molid=<?php echo $obj["codigo"]; ?>" 
                 style="font-size:14px;font-weight:bold;color:#666666;text-decoration:none;"><?php echo $obj["nome"]; ?></a></td>
 				</tr>
                 <tr><td colspan="2" height="1"></td></tr>
