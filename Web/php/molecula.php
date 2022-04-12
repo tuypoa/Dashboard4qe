@@ -55,8 +55,8 @@ $query = "SELECT m.codigo, m.nome
 					INNER JOIN molecula mol ON mol.codigo=a.molecula_codigo
 					INNER JOIN qeresumo r ON r.qearquivoin_codigo=a.codigo
 				WHERE mol.codigo = :molid
-				GROUP BY m.maquina_codigo, maq.nome, m.hasharqin, m.ignorar,a.nome, a.descricao, a.codigo
-				ORDER BY a.descricao, a.codigo";
+				GROUP BY m.maquina_codigo, maq.nome, m.hasharqin, m.ordem, m.ignorar,a.nome, a.descricao, a.codigo
+				ORDER BY m.ordem, a.descricao, a.codigo";
 		$stBusca = $con->prepare($query);	
 		$stBusca->bindParam(':molid', $id_molecula, PDO::PARAM_INT);
 		$stBusca->execute();

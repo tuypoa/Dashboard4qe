@@ -39,7 +39,7 @@ require_once("config/configuracao.php");
 			</tr>
 			<tr>
 			<td ><?php
-				echo "<span style='color:".($obj["online"]?(($obj["ignorar"] && $obj["cpuused"] <50) || $obj["ociosa"]?"red":"blue"):"#666666").";font-size:14px;font-weight:bold;'>".$obj["cpuused"]."% cpu</span><br>";
+				echo "<span style='color:".($obj["online"]?(!$obj["ignorar"] && ($obj["cpuused"] <50 || $obj["ociosa"])?"red":"blue"):"#666666").";font-size:14px;font-weight:bold;'>".$obj["cpuused"]."% cpu</span><br>";
 				echo "<span style='color:".($obj["online"]?"green":"#666666").";font-size:13px;'>".$obj["memused"]."% Mem</span><br>";
 				echo "<span style='font-size:12px;'>".$obj["ultimoacesso"]."</span><br>";
 			?></td>
