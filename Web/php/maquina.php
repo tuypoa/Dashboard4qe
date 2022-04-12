@@ -74,7 +74,7 @@ $query = "SELECT m.codigo, m.nome, m.cpuused, m.memused, m.online, m.ignorar,
 									$op = $rsBusca2[0];
 									if($op["erro"]==null){
 									?>
-									<a href="resumo.php?rid=<?php echo $obj["output_codigo"]; ?>" class="<?php echo ($op["executando"]?"fblue":($op["concluido"]?"fgreen":"fred")); ?>" style="font-size:12px;font-weight:bold;" ><?php echo ($op["executando"]?"EM ANDAMENTO":($op["concluido"]?"CONCL&Iacute;DO":"INTERROMPIDO")); ?></a>
+									<a href="resumo.php?rid=<?php echo $obj["output_codigo"]; ?>" class="<?php echo ($op["executando"]?"fblue":($op["concluido"]?"fgreen":"fred")); ?>" style="font-size:12px;font-weight:bold;" ><?php echo ($op["executando"]?"EM ANDAMENTO":($op["concluido"]?"CONCLU&Iacute;DO":"INTERROMPIDO")); ?></a>
 									<br><span style="font-size:12px;color:#9f9f9f;font-weight:bold;"><?php echo $op["ciclos"]; ?> scf steps</span>
 									<span style="font-size:12px;color:#9f9f9f;">(<?php echo number_format($op["tamanhokb"]/1024,2); ?> MB)</span>
 									<?php 
