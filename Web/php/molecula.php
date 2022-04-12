@@ -37,11 +37,13 @@ $query = "SELECT m.codigo, m.nome
 	
 	<table width="100%" cellspacing="0" cellpadding="5" border="0" >
 	<tr>
-		<td><span style="font-size:16px;font-weight:bold;color:#9f9f9f;">Sistemas cristalinos iniciais</span></td>
+		<td colspan="2"><span style="font-size:16px;font-weight:bold;color:#9f9f9f;">Sistemas cristalinos iniciais</span></td>
+		
 		<td align="center"><a href="molecula.php?molid=<?php echo $id_molecula; ?>&pe=1&pv=<?php echo $ppv; ?>&pd=<?php echo $ppd; ?>&ps=<?php echo $pps; ?>" >ENTALPIA</a><br>(Ry)</td>
 		<td align="center"><a href="molecula.php?molid=<?php echo $id_molecula; ?>&pe=<?php echo $ppe; ?>&pv=1&pd=<?php echo $ppd; ?>&ps=<?php echo $pps; ?>" >VOLUME</a><br>(Ang^3)</td>
 		<td align="center"><a href="molecula.php?molid=<?php echo $id_molecula; ?>&pe=<?php echo $ppe; ?>&pv=<?php echo $ppv; ?>&pd=1&ps=<?php echo $pps; ?>" >DENSIDADE</a><br>(g/cm^3)</td>
-		<td align="center"><a href="molecula.php?molid=<?php echo $id_molecula; ?>&pe=1&pv=1&pd=1&ps=1" >SCF STEP</a></td>
+		<td align="center"><a href="molecula.php?molid=<?php echo $id_molecula; ?>&pe=1&pv=1&pd=1&ps=1" >TEMPO CPU</a><br>(total)</td>
+		<td align="center">SCF STEP<br>(total)</td>
 		<td></td>
 	</tr>
 	<?php
@@ -67,12 +69,12 @@ $query = "SELECT m.codigo, m.nome
 				<td style="border-bottom: solid 1px #cccccc;"><a href="resumo.php?rid=<?php echo $obj["output_codigo"]; ?>" style="font-size:14px;text-decoration:none;"><?php echo $obj["descricao"]; ?></a></td>
 					<?php
 						$query2 = "SELECT concluido,executando,erro,tamanhokb,ciclos,horas,ultimalida,
-							qi.enthalpy, qi.volume, qi.density
+							qi.enthalpy, qi.volume, qi.density, qi.cellparams
 						FROM (
 							SELECT r.codigo,r.concluido,r.executando,r.erro,r.tamanhokb,
 								MAX(qi.scfcycles) AS ciclos,	
 								(MAX(qie.cputime)/3600) as horas,
-								TO_CHAR(r.ultimalida,'DD/MM HH24:MI') AS ultimalida
+								TO_CHAR(r.ultimalida,'DD/MM/YY HH24:MI') AS ultimalida
 							FROM qeresumo r
 								INNER JOIN qeinfoscf qi ON qi.qeresumo_codigo=r.codigo
 								INNER JOIN qeinfoiteration qie ON qie.qeresumo_codigo=r.codigo AND qi.scfcycles=qie.scfcycles
@@ -87,6 +89,10 @@ $query = "SELECT m.codigo, m.nome
 						if(sizeof($rsBusca2)>0){
 								$op = $rsBusca2[0];
 								?>
+								<td style="border-bottom: solid 1px #cccccc;" align="center">
+									<span style="font-size:14px;color:#666666;"><?php definirNomeSistemaCristal($op['cellparams']); ?></span>
+								</td>
+								
 								<td style="border-bottom: solid 1px #cccccc;" align="center">
 									<?php if($ppe){ ?>
 										<img src="graph/graph_molecula_mini.php?rid=<?php echo $obj["output_codigo"]; ?>&pe=1" width="120" height="60"/>
@@ -112,38 +118,35 @@ $query = "SELECT m.codigo, m.nome
 									<?php if($pps){ ?>
 										<img src="graph/graph_molecula_mini.php?rid=<?php echo $obj["output_codigo"]; ?>&ps=1" width="120" height="60"/>
 										<br>
-										<?php 										 
-										$stBusca3 = $con->prepare("SELECT qi.scfcycles, (max(cputime)-min(cputime)) cputime
-															FROM qeresumo r
-																INNER JOIN qeinfoscf qi ON qi.qeresumo_codigo=r.codigo
-																INNER JOIN qeinfoiteration qie ON r.codigo=qie.qeresumo_codigo AND qi.scfcycles=qie.scfcycles
-															WHERE r.codigo = :rid AND qi.scfcycles = :ciclo
-															GROUP BY qi.scfcycles");	
-										$stBusca3->bindParam(':rid', $obj["output_codigo"], PDO::PARAM_INT);
-										$stBusca3->bindParam(':ciclo', $op["ciclos"], PDO::PARAM_INT);
-										$stBusca3->execute();
-										$rsBusca3 = $stBusca3->fetchAll(PDO::FETCH_ASSOC);
-										if(sizeof($rsBusca3)>0){
-												$minutos = ($rsBusca3[0]["cputime"]/60);
-												if($minutos<60){
-													echo number_format($minutos,0)."min no ";
-												}else{
-													$horas = $minutos/60;
-													$minutos = $minutos % 60;
-													echo number_format($horas,0)."h".number_format($minutos,0)."min no ";
-												}
-										}
-										unset($rsBusca3);
-										$rsBusca3 = null;
-										$stBusca3->closeCursor();
+										<?php 										 										
 									} ?>
+									<span style="font-size:14px;"><?php 
+									$stBusca3 = $con->prepare("SELECT r.codigo, max(cputime) cputime
+																FROM qeresumo r
+																	INNER JOIN qeinfoscf qi ON qi.qeresumo_codigo=r.codigo
+																	INNER JOIN qeinfoiteration qie ON r.codigo=qie.qeresumo_codigo AND qi.scfcycles=qie.scfcycles
+																WHERE r.codigo = :rid 
+																GROUP BY r.codigo");	
+											$stBusca3->bindParam(':rid', $obj["output_codigo"], PDO::PARAM_INT);
+											$stBusca3->execute();
+											$rsBusca3 = $stBusca3->fetchAll(PDO::FETCH_ASSOC);
+											if(sizeof($rsBusca3)>0){
+												$segundos = $rsBusca3[0]["cputime"];
+												$dias = ($segundos/3600)/24;
+												echo ($dias>1?number_format($dias,0)."d ":"").gmdate("H", $segundos)."h ".gmdate("i", $segundos)."m";
+											}
+											unset($rsBusca3);
+											$rsBusca3 = null;
+											$stBusca3->closeCursor(); ?></span>
+								</td>
+								<td style="border-bottom: solid 1px #cccccc;" align="center">
 									<span style="font-size:14px;"><?php echo $op["ciclos"]; ?></span>
 								</td>
 								<td style="border-bottom: solid 1px #cccccc;" align="center"><?php
 								if($op["erro"]==null){
 								?>								
-								<a href="resumo.php?rid=<?php echo $obj["output_codigo"]; ?>" class="<?php echo ($op["executando"]?"fblue":($op["concluido"]?"fgreen":"fred")); ?>" style="font-size:12px;font-weight:bold;" ><?php echo ($op["executando"]?"EM ANDAMENTO":($op["concluido"]?"CONCL&Iacute;DO":"INTERROMPIDO")); ?></a>								
-								<br><span style="font-size:12px;color:#9f9f9f;">(<?php echo number_format($op["tamanhokb"]/1024,2); ?> MB, <?php echo $op["horas"]>72?number_format($op["horas"]/24,0)."d".number_format($op["horas"]%24,0)."h":$op["horas"]."h";?>)</span>
+								<a href="resumo.php?rid=<?php echo $obj["output_codigo"]; ?>" class="<?php echo ($op["executando"]?"fblue":($op["concluido"]?"fgreen":"fred")); ?>" style="font-size:12px;font-weight:bold;" ><?php echo ($op["executando"]?"EM ANDAMENTO":($op["concluido"]?"CONCLU&Iacute;DO":"INTERROMPIDO")); ?></a>								
+								<br><span style="font-size:12px;color:#9f9f9f;">(<?php echo number_format($op["tamanhokb"]/1024,2); ?> MB)</span>
 								<?php 
 									if($op["concluido"]){
 									?><br><span style="font-size:12px;color:#9f9f9f;">Fim <?php echo $op["ultimalida"]; ?></span>
@@ -152,11 +155,21 @@ $query = "SELECT m.codigo, m.nome
 								}else{
 									?>
 									<a href="resumo.php?rid=<?php echo $obj["output_codigo"]; ?>" class="fred" style="font-size:12px;font-weight:bold;" >N&#195;O CONVERGIU</a>
-									<br><span style="font-size:12px;color:#9f9f9f;">(<?php echo number_format($op["tamanhokb"]/1024,2); ?> MB, <?php echo $op["horas"]>72?number_format($op["horas"]/24,0)."d".number_format($op["horas"]%24,0)."h":$op["horas"]."h";?>)</span>										
+									<br><span style="font-size:12px;color:#9f9f9f;">(<?php echo number_format($op["tamanhokb"]/1024,2); ?> MB)</span>										
 									<?php
 								}	
 								?></td>
 								<?php
+						}else{
+							?>
+							<td style="border-bottom: solid 1px #cccccc;" align="center" height="35"></td>
+							<td style="border-bottom: solid 1px #cccccc;" align="center" ><span style="font-size:14px;">-</span></td>
+							<td style="border-bottom: solid 1px #cccccc;" align="center" ><span style="font-size:14px;">-</span></td>
+							<td style="border-bottom: solid 1px #cccccc;" align="center" ><span style="font-size:14px;">-</span></td>
+							<td style="border-bottom: solid 1px #cccccc;" align="center" ><span style="font-size:14px;">-</span></td>
+							<td style="border-bottom: solid 1px #cccccc;" align="center" ><span style="font-size:14px;">1</span></td>
+							<td style="border-bottom: solid 1px #cccccc;" align="center"><span class="fblue" style="font-size:12px;font-weight:bold;" >INICIANDO</span></td>
+							<?php
 						}
 						unset($rsBusca2);
 						$rsBusca2 = null;

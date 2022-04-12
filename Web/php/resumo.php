@@ -79,6 +79,7 @@ $query = "SELECT tb.codigo, tb.qearquivoin_codigo, cputime,
 		<td align="center">ENTALPIA<br>(Ry)</td>
 		<td align="center">VOLUME<br>(Ang^3)</td>
 		<td align="center">DENSIDADE<br>(g/cm^3)</td>
+		<td align="center">TEMPO CPU<br>(horas)</td>
 		<td align="center">ITERA&Ccedil;&Otilde;ES<br>#</td>
 	</tr>
 	<tr>
@@ -87,18 +88,56 @@ $query = "SELECT tb.codigo, tb.qearquivoin_codigo, cputime,
 		<td style="border-bottom: solid 1px #cccccc;" align="center"><span style="font-size:14px;"><?php echo str_replace('.', ',', str_replace(',', '', number_format($resumo["minenthalpy"],3))); ?></span></td>
 		<td style="border-bottom: solid 1px #cccccc;" align="center"><span style="font-size:14px;"><?php echo str_replace('.', ',', str_replace(',', '', number_format($resumo["minvolume"],1))); ?></span></td>
 		<td style="border-bottom: solid 1px #cccccc;" align="center"><span style="font-size:14px;"><?php echo str_replace('.', ',', str_replace(',', '', number_format($resumo["mindensity"],3))); ?></span></td>
+		<td style="border-bottom: solid 1px #cccccc;" align="center"><span style="font-size:14px;"><?php 										 
+			$stBusca3 = $con->prepare("SELECT qi.scfcycles, (max(cputime)-min(cputime)) cputime
+								FROM qeresumo r
+									INNER JOIN qeinfoscf qi ON qi.qeresumo_codigo=r.codigo
+									INNER JOIN qeinfoiteration qie ON r.codigo=qie.qeresumo_codigo AND qi.scfcycles=qie.scfcycles
+								WHERE r.codigo = :rid AND qi.scfcycles = :ciclo
+								GROUP BY qi.scfcycles");	
+			$stBusca3->bindParam(':rid', $resumo["codigo"], PDO::PARAM_INT);
+			$stBusca3->bindParam(':ciclo', $resumo["minciclo"], PDO::PARAM_INT);
+			$stBusca3->execute();
+			$rsBusca3 = $stBusca3->fetchAll(PDO::FETCH_ASSOC);
+			if(sizeof($rsBusca3)>0){
+					$segundos = $rsBusca3[0]["cputime"];
+					echo gmdate("H:i:s", $segundos);
+			}
+			unset($rsBusca3);
+			$rsBusca3 = null;
+			$stBusca3->closeCursor();
+		?></span></td>
 		<td style="border-bottom: solid 1px #cccccc;" align="center"><span style="font-size:14px;"><?php echo $resumo["miniterations"]; ?></span></td>
 	</tr>
 	<?php 
 	
 		
-		if($resumo["maxciclo"]>1 && !$op["concluido"]){ ?>
+		if($resumo["maxciclo"]>1 ){ ?>
 		<tr>
 			<td style="border-bottom: solid 1px #cccccc;" height="35"><span style="font-size:12px;font-weight:bold;color:#9f9f9f;">&Uacute;LTIMA LEITURA <?php echo $op["ultimalida"]; ?></span></td>
 			<td style="border-bottom: solid 1px #cccccc;"><span style="font-size:14px;font-weight:bold;color:#9f9f9f;">SCF step <?php echo $resumo["maxciclo"]; ?></span></td>
 			<td style="border-bottom: solid 1px #cccccc;" align="center"><span style="font-size:14px;font-weight:bold;"><?php echo str_replace('.', ',', str_replace(',', '', number_format($resumo["maxenthalpy"],3))); ?></span></td>
 			<td style="border-bottom: solid 1px #cccccc;" align="center"><span style="font-size:14px;"><?php echo str_replace('.', ',', str_replace(',', '', number_format($resumo["maxvolume"],1))); ?></span></td>
 			<td style="border-bottom: solid 1px #cccccc;" align="center"><span style="font-size:14px;"><?php echo str_replace('.', ',', str_replace(',', '', number_format($resumo["maxdensity"],3))); ?></span></td>
+			<td style="border-bottom: solid 1px #cccccc;" align="center"><span style="font-size:14px;"><?php 										 
+			$stBusca3 = $con->prepare("SELECT qi.scfcycles, (max(cputime)-min(cputime)) cputime
+								FROM qeresumo r
+									INNER JOIN qeinfoscf qi ON qi.qeresumo_codigo=r.codigo
+									INNER JOIN qeinfoiteration qie ON r.codigo=qie.qeresumo_codigo AND qi.scfcycles=qie.scfcycles
+								WHERE r.codigo = :rid AND qi.scfcycles = :ciclo
+								GROUP BY qi.scfcycles");	
+			$stBusca3->bindParam(':rid', $resumo["codigo"], PDO::PARAM_INT);
+			$stBusca3->bindParam(':ciclo', $resumo["maxciclo"], PDO::PARAM_INT);
+			$stBusca3->execute();
+			$rsBusca3 = $stBusca3->fetchAll(PDO::FETCH_ASSOC);
+			if(sizeof($rsBusca3)>0){
+					$segundos = $rsBusca3[0]["cputime"];
+					echo gmdate("H:i:s", $segundos);
+			}
+			unset($rsBusca3);
+			$rsBusca3 = null;
+			$stBusca3->closeCursor();
+		?></span></td>
 			<td style="border-bottom: solid 1px #cccccc;" align="center"><span style="font-size:14px;"><?php echo $resumo["maxiterations"]; ?></span></td>
 		</tr>
 		<?php } ?>
@@ -107,7 +146,7 @@ $query = "SELECT tb.codigo, tb.qearquivoin_codigo, cputime,
 		if($op["erro"]==null){
 			?>	
 			<tr>
-				<td style="border-bottom: solid 1px #cccccc;"><span class="<?php echo ($op["executando"]?"fblue":($op["concluido"]?"fgreen":"fred")); ?>" style="font-size:14px;font-weight:bold;" >C&Aacute;LCULO <?php echo ($op["executando"]?"EM ANDAMENTO":($op["concluido"]?"CONCL&Iacute;DO":"INTERROMPIDO")); ?></span></td>				
+				<td style="border-bottom: solid 1px #cccccc;"><span class="<?php echo ($op["executando"]?"fblue":($op["concluido"]?"fgreen":"fred")); ?>" style="font-size:14px;font-weight:bold;" >C&Aacute;LCULO <?php echo ($op["executando"]?"EM ANDAMENTO":($op["concluido"]?"CONCLU&Iacute;DO":"INTERROMPIDO")); ?></span></td>				
 				<?php 
 				if($op["concluido"]){
 					?>
@@ -118,7 +157,7 @@ $query = "SELECT tb.codigo, tb.qearquivoin_codigo, cputime,
 					<td style="border-bottom: solid 1px #cccccc;"><span style="font-size:14px;font-weight:bold;color:#9f9f9f;">SCF step <?php echo $resumo["maxciclo"]+1; ?></span></td>
 					<td style="border-bottom: solid 1px #cccccc;" align="center"><img src="images/load1.gif" height="25"/></td><?php 
 				} ?>
-				<td style="border-bottom: solid 1px #cccccc;" colspan="3"></td>
+				<td style="border-bottom: solid 1px #cccccc;" colspan="4"></td>
 			</tr>								
 			<?php 
 		}else{
@@ -126,7 +165,7 @@ $query = "SELECT tb.codigo, tb.qearquivoin_codigo, cputime,
 			<tr>
 				<td style="border-bottom: solid 1px #cccccc;" height="35"><span class="fred" style="font-size:14px;font-weight:bold;" >C&Aacute;LCULO N&#195;O CONVERGIU</span></td>
 				<td style="border-bottom: solid 1px #cccccc;"><span style="font-size:14px;font-weight:bold;color:#9f9f9f;">SCF step <?php echo $resumo["maxciclo"]+1; ?></span></td>
-				<td style="border-bottom: solid 1px #cccccc;" align="center" colspan="4">
+				<td style="border-bottom: solid 1px #cccccc;" align="center" colspan="5">
 					<span style="font-size:16px;" class="fred" ><?php echo $op["erro"]; ?></span>
 				</td>
 			</tr>			
@@ -134,20 +173,30 @@ $query = "SELECT tb.codigo, tb.qearquivoin_codigo, cputime,
 		}
 	   ?>
 	   <tr>
-	   <td colspan="2"></td>
-		<td colspan="4" align="center">
-			<span style="font-size:12px;">TEMPO DE CPU TOTAL: <b><?php echo $op["horas"]>72?number_format($op["horas"]/24,0)." DIAS E ".number_format($op["horas"]%24,0)." HORAS":$op["horas"]." HORAS";?></b> (<?php echo number_format($op["tamanhokb"]/1024,2); ?> MB)&nbsp;&nbsp;</span>		
+	   
+		<td colspan="7" style="background-color: #f5f5f5;" align="center">
+			<span style="font-size:12px;">TEMPO TOTAL DE CPU: <b><?php echo $op["horas"]>72?number_format($op["horas"]/24,0)." DIAS E ".number_format($op["horas"]%24,0)." HORAS":$op["horas"]." HORAS";?></b> (<?php echo str_replace('.', ',', str_replace(',', '',number_format($op["tamanhokb"]/1024,2))); ?> MB)&nbsp;&nbsp;</span>		
 		</td>		
 	</tr>	 
 	</table>		
 </div>
 
-<img src="graph/graph_resumo.php?rid=<?php echo $resumo["codigo"]; ?>&pe=1" align="left"/>
-<img src="graph/graph_resumo.php?rid=<?php echo $resumo["codigo"]; ?>&pv=1" align="left"/>
-<img src="graph/graph_resumo.php?rid=<?php echo $resumo["codigo"]; ?>&pd=1" align="left"/>
-<img src="graph/graph_resumo.php?rid=<?php echo $resumo["codigo"]; ?>&ps=1" align="left"/>
-
-
+<table width="100%" cellspacing="0" cellpadding="0" border="0" >
+	<tr>
+		<td>
+		<img src="graph/graph_resumo.php?rid=<?php echo $resumo["codigo"]; ?>&pe=1" align="left"/>
+		<img src="graph/graph_resumo.php?rid=<?php echo $resumo["codigo"]; ?>&pv=1" align="left"/>
+		<img src="graph/graph_resumo.php?rid=<?php echo $resumo["codigo"]; ?>&pd=1" align="left"/>
+<!--		</td>		
+	</tr>	
+	<tr>
+		<td>  -->
+		<img src="graph/graph_resumo.php?rid=<?php echo $resumo["codigo"]; ?>&ps=1" align="left"/>
+		<img src="graph/graph_resumo.php?rid=<?php echo $resumo["codigo"]; ?>&pi=1" align="left"/>
+		<!-- <img src="graph/graph_resumo.php?rid=<?php echo $resumo["codigo"]; ?>&psi=1" align="left"/> -->
+		</td>		
+	</tr>	 
+	</table>		
 </div>
 
 <?php include_once 'include/bottom.php'; ?>

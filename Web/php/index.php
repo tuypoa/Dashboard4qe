@@ -33,14 +33,14 @@ require_once("config/configuracao.php");
 		<table cellspacing="0" cellpadding="3" border="0" align="left" bgcolor="#ffffff" >
 		    <tr>
 			<td><?php
-				echo "<span style='font-size:14px;font-weight:bold;'>".$obj["nome"]."</span><br>".($obj["online"]?($obj["iniciarjob"]?"Autorizada a iniciar processo...":"(Online)"):"(Offline)");
+				echo "<span style='font-size:14px;font-weight:bold;'>".$obj["nome"]."</span><br>".($obj["online"]?($obj["iniciarjob"]?"Autorizada a iniciar processo...":"(Online)"):"<span style='color:red;'>(Offline)</span>");
 			?>
 			</td>
 			</tr>
 			<tr>
 			<td ><?php
-				echo "<span style='color:".(!$obj["ignorar"] && $obj["ociosa"]?"red":"blue").";font-size:14px;font-weight:bold;'>".$obj["cpuused"]."% cpu</span><br>";
-				echo "<span style='color:green;font-size:13px;'>".$obj["memused"]."% Mem</span><br>";
+				echo "<span style='color:".($obj["online"]?(($obj["ignorar"] && $obj["cpuused"] <50) || $obj["ociosa"]?"red":"blue"):"#666666").";font-size:14px;font-weight:bold;'>".$obj["cpuused"]."% cpu</span><br>";
+				echo "<span style='color:".($obj["online"]?"green":"#666666").";font-size:13px;'>".$obj["memused"]."% Mem</span><br>";
 				echo "<span style='font-size:12px;'>".$obj["ultimoacesso"]."</span><br>";
 			?></td>
 			</tr>

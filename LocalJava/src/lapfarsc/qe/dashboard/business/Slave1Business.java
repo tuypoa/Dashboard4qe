@@ -46,7 +46,7 @@ public class Slave1Business {
 		this.maquinaDTO = db.selectMaquinaDTO(maqId);
 	}
 
-	private void gravarJarLeitura(boolean force) throws Exception {
+	public void gravarJarLeitura(boolean force) throws Exception {		
 		Process process = Runtime.getRuntime().exec("top -bn1");
 		int exitCode = process.waitFor();
 		if (exitCode == 0) {
@@ -62,7 +62,7 @@ public class Slave1Business {
 			CmdTopDTO cmdDTO = HeadBusiness.getCommandTopInfos(output);
 			if(force || cmdDTO.getCpuUsed().doubleValue() < 60){
 				JarLeituraDTO jlDTO = new JarLeituraDTO();
-				jlDTO.setCpuUsed( cmdDTO.getCpuUsed() );
+				jlDTO.setCpuUsed( maquinaDTO.getCpuUsed() );
 				jlDTO.setMemUsed( cmdDTO.getMemUsed() );
 				jlDTO.setMaquinaCodigo(maquinaDTO.getCodigo());
 				db.incluirJarLeituraDTO(jlDTO);

@@ -69,12 +69,13 @@ public class HeadBusiness {
 			}
 			
 			String[] commands = new String[]{
-					"top -bn1 |grep Cpu",
-					"top -bn1 |grep Mem",
+					db.verificarMaquinaCPUOciosa(maqDTO.getCodigo())? "top -b1 |grep Cpu" : "top -bn1 |grep Cpu",
+					"top -bn1 |grep Mem" ,
 					cmd
 			};
 			
-			StringBuilder sb = new StringBuilder();			
+			StringBuilder sb = new StringBuilder();	
+			int z = 0;
 			for (String linhaComando : commands) {
 				if(linhaComando!=null){
 					channel = session.openChannel("exec");
@@ -94,11 +95,17 @@ public class HeadBusiness {
 							if(in.available()>0) continue;						
 							break;
 						}
-						try{Thread.sleep(1000);}catch(Exception ee){}
-					}
+						if(z==0 && sb.indexOf("\n")!=-1 && sb.indexOf("\n",sb.indexOf("\n")+1)!=-1){
+							sb = new StringBuilder(sb.substring(sb.indexOf("\n")+1, sb.indexOf("\n",sb.indexOf("\n")+1)));
+							break;
+						}else{
+							try{Thread.sleep(500);}catch(Exception ee){}	
+						}
+					}					
 					in.close();
 					//System.out.println(sb.toString());
 				}
+				z++;
 			}			
 			CmdTopDTO cmdDTO = getCommandTopInfos(sb.toString());
 			maqDTO.setCpuUsed( cmdDTO.getCpuUsed() );

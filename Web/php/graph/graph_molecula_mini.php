@@ -79,7 +79,7 @@ $plot->DrawGraph();
 //$plot->SetTitle("Grafico de exemplo");
 //$plot->SetXTitle("Eixo X");
 if($pps){	
-	$plot->SetYTitle("horas");
+//	$plot->SetYTitle("horas");
 }
 
 //$plot->SetYTickIncrement(0.2);
