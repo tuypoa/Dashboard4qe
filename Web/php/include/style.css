@@ -27,6 +27,9 @@ body{
 .fred {
   color: #b3404a;
 }
+.fgray {
+  color: #707070;
+}
 
 td,span{
 	font-family: arial;

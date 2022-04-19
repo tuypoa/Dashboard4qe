@@ -145,7 +145,7 @@ $query = "SELECT m.codigo, m.nome
 								<td style="border-bottom: solid 1px #cccccc;" align="center"><?php
 								if($op["erro"]==null){
 								?>								
-								<a href="resumo.php?rid=<?php echo $obj["output_codigo"]; ?>" class="<?php echo ($op["executando"]?"fblue":($op["concluido"]?"fgreen":"fred")); ?>" style="font-size:12px;font-weight:bold;" ><?php echo ($op["executando"]?"EM ANDAMENTO":($op["concluido"]?"CONCLU&Iacute;DO":"INTERROMPIDO")); ?></a>								
+								<a href="resumo.php?rid=<?php echo $obj["output_codigo"]; ?>" class="<?php echo ($op["executando"]?"fblue":($op["concluido"]?"fgreen":"fgray")); ?>" style="font-size:12px;font-weight:bold;" ><?php echo ($op["executando"]?"EM ANDAMENTO":($op["concluido"]?"CONCLU&Iacute;DO":"INTERROMPIDO")); ?></a>								
 								<br><span style="font-size:12px;color:#9f9f9f;">(<?php echo number_format($op["tamanhokb"]/1024,2); ?> MB)</span>
 								<?php 
 									if($op["concluido"]){

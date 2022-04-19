@@ -77,7 +77,7 @@
 				
 				echo " ".$obj["datahora"]." <a href='maquina.php?mid=".$obj["codigo"]."' style='font-weight:bold;text-decoration:none;' ".($maquina!=null && $obj["codigo"]==$maquina["codigo"]?" class='fblue'":"").">".$obj["nome"]."</a>$ ".$obj["conteudo"];
 				if($obj["ciclos"]!=null) { 
-					echo " <span class='".($obj["concluido"]?"fgreen":"fred")."'>".($obj["erro"]!==null?"Error ":(!$obj["concluido"]?"Caiu ":""))."(".$obj["ciclos"]." steps, ".($obj["horas"]>72?number_format($obj["horas"]/24,0)."d".number_format($obj["horas"]%24,0)."h":$obj["horas"]."h").")</span>"; 
+					echo " <span class='".($obj["concluido"]?"fgreen":($obj["erro"]!=null?"fred":"fgray"))."'>".($obj["erro"]!=null?"Error ":(!$obj["concluido"]?"Caiu ":""))."(".$obj["ciclos"]." steps, ".($obj["horas"]>72?number_format($obj["horas"]/24,0)."d".number_format($obj["horas"]%24,0)."h":$obj["horas"]."h").")</span>"; 
 				}
 				echo "\n";
 
