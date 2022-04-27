@@ -334,8 +334,10 @@ public class Slave1Business {
 		//analisar os em andamento: processar TRUE
 		List<QeResumoDTO> listResumoDTO = db.selectQeResumoDTOAProcessar();
 		for (QeResumoDTO qeResumoDTO : listResumoDTO) {
-			MaquinaQeArquivoInDTO maDTO = db.selectMaquinaQeArquivoInDTO(maquinaDTO.getCodigo(), qeResumoDTO.getQeArquivoInCodigo());			
-			ob.processarArquivoOutput(qeResumoDTO, new File( maDTO.getRootPath()+qeResumoDTO.getNome() ));
+			MaquinaQeArquivoInDTO maDTO = db.selectMaquinaQeArquivoInDTO(maquinaDTO.getCodigo(), qeResumoDTO.getQeArquivoInCodigo());
+			if(maDTO!=null){
+				ob.processarArquivoOutput(qeResumoDTO, new File( maDTO.getRootPath()+qeResumoDTO.getNome() ));
+			}
 		}
 		
 		//if(listResumoDTO.size()>0 ){ //OU TEVE concluidos 
