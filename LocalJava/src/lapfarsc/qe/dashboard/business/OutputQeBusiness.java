@@ -41,10 +41,17 @@ public class OutputQeBusiness {
 		        String key = null;
 		        while(true) {
 		            read = br.read(buffer, 0, N);
-		            String text = new String(buffer, 0, read);
-		            
-		            conteudo.append(text);
-
+		            String text = null;
+		            try{
+		            	text = new String(buffer, 0, read);
+		            }catch(StringIndexOutOfBoundsException sioobe){
+		            	text = null;
+		            	System.out.println("> ERROR: "+ arquivo.getName());
+		            	System.out.println(">>> "+sioobe.getMessage());
+		            }
+		            if(text!=null){
+		            	conteudo.append(text);
+		            }
 		           
             		if(infoScfDTO == null && numProcessadores == null){
             			//ler cabecalho 
